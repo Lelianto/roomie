@@ -48,7 +48,7 @@ export const products: Product[] = [
       "A compact sit-stand desk with dual cable ports and a whisper-quiet memory motor.",
     weeklyPrice: 9,
     compareAtPrice: 18,
-    image: "/products/desk-electric.jpg",
+    image: "/products/generated/aerolift-120.webp",
     badge: "Popular",
     condition: "Like new",
     stock: 4,
@@ -73,7 +73,7 @@ export const products: Product[] = [
       "A generous 160 cm surface for dual displays, speakers, and serious creative work.",
     weeklyPrice: 12,
     compareAtPrice: 20,
-    image: "/products/desk-electric-wide.jpg",
+    image: "/products/generated/aerolift-160.webp",
     badge: "New",
     condition: "Like new",
     stock: 2,
@@ -98,7 +98,7 @@ export const products: Product[] = [
       "A warm oak-look desk with smooth mechanical adjustment and no power required.",
     weeklyPrice: 7,
     compareAtPrice: 10,
-    image: "/products/desk-manual.jpg",
+    image: "/products/generated/form-120.webp",
     badge: "Instant",
     condition: "Excellent",
     stock: 3,
@@ -123,7 +123,7 @@ export const products: Product[] = [
       "Full-day support with adjustable headrest, lumbar control, 4D arms, and leg rest.",
     weeklyPrice: 8,
     compareAtPrice: 16,
-    image: "/products/chair-ergo.jpg",
+    image: "/products/generated/ergoflex-4d.webp",
     badge: "Popular",
     condition: "Like new",
     stock: 5,
@@ -148,7 +148,7 @@ export const products: Product[] = [
       "A lighter ergonomic chair with breathable mesh and a compact footprint.",
     weeklyPrice: 6,
     compareAtPrice: 10,
-    image: "/products/chair-focus.jpg",
+    image: "/products/generated/focus-mesh.webp",
     badge: "Instant",
     condition: "Excellent",
     stock: 3,
@@ -173,7 +173,7 @@ export const products: Product[] = [
       "A sharp 4K IPS display with accurate color, HDR, and single-cable USB-C.",
     weeklyPrice: 9,
     compareAtPrice: 12,
-    image: "/products/monitor.jpg",
+    image: "/products/generated/viewpro-27.webp",
     badge: "Instant",
     condition: "Like new",
     stock: 6,
@@ -198,7 +198,7 @@ export const products: Product[] = [
       "A focused, flicker-free light bar with adjustable warmth and a compact weighted base.",
     weeklyPrice: 2.5,
     compareAtPrice: 3.25,
-    image: "/products/cutouts/lamp-generated.png",
+    image: "/products/generated/line-task-lamp.webp",
     badge: "Instant",
     condition: "Like new",
     stock: 4,
@@ -223,7 +223,7 @@ export const products: Product[] = [
       "Low-profile illuminated keys with multi-device switching for Mac and Windows.",
     weeklyPrice: 3,
     compareAtPrice: 3.75,
-    image: "/products/keyboard.jpg",
+    image: "/products/generated/mx-keys.webp",
     badge: "Popular",
     condition: "Excellent",
     stock: 7,
@@ -248,7 +248,7 @@ export const products: Product[] = [
       "An ergonomic precision mouse with quiet clicks and an 8K DPI tracking sensor.",
     weeklyPrice: 3,
     compareAtPrice: 3.75,
-    image: "/products/mouse.jpg",
+    image: "/products/generated/mx-master-3s.webp",
     badge: "Instant",
     condition: "Excellent",
     stock: 8,
@@ -273,7 +273,7 @@ export const products: Product[] = [
       "A rigid aluminum riser that brings 10–17 inch laptops to a healthier eye level.",
     weeklyPrice: 1.5,
     compareAtPrice: 2,
-    image: "/products/laptop-stand.jpg",
+    image: "/products/generated/alloy-stand.webp",
     badge: "Instant",
     condition: "Excellent",
     stock: 9,
@@ -297,7 +297,7 @@ export const products: Product[] = [
     description:
       "Three universal sockets plus USB charging in a tidy two-meter desktop strip.",
     weeklyPrice: 0.75,
-    image: "/products/power-strip.jpg",
+    image: "/products/generated/smart-strip.webp",
     badge: "Instant",
     condition: "Excellent",
     stock: 12,
@@ -378,6 +378,17 @@ export function getSetupProducts(setup: WorkspaceSetup) {
   );
 }
 
+export const picturedAccessoryIds = [
+  "viewpro-27",
+  "mi-lamp-1s",
+  "mx-keys",
+  "mx-master-3s",
+] as const;
+
+export function hasCompletePicturedKit(setup: WorkspaceSetup) {
+  return picturedAccessoryIds.every((id) => setup.accessoryIds.includes(id));
+}
+
 export function getSceneRender(setup: WorkspaceSetup) {
   const desk =
     ({
@@ -390,17 +401,7 @@ export function getSceneRender(setup: WorkspaceSetup) {
       "ergoflex-4d": "ergonomic",
       "focus-mesh": "focus",
     } as Record<string, string>)[setup.chairId] ?? "ergonomic";
-  const picturedAccessories = [
-    "viewpro-27",
-    "mi-lamp-1s",
-    "mx-keys",
-    "mx-master-3s",
-  ];
-  const equipment = picturedAccessories.every((id) =>
-    setup.accessoryIds.includes(id),
-  )
-    ? "-equipped"
-    : "";
+  const equipment = hasCompletePicturedKit(setup) ? "-equipped" : "";
 
   return `/scene/renders/${desk}-${chair}${equipment}.webp`;
 }

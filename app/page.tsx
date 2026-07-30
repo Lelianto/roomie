@@ -14,7 +14,9 @@ import {
   getProduct,
   getSceneRender,
   getSetupProducts,
+  hasCompletePicturedKit,
   initialSetup,
+  picturedAccessoryIds,
   productPrice,
   products,
   setupPrice,
@@ -37,6 +39,8 @@ const steps: { id: Category; label: string; shortLabel: string }[] = [
   { id: "chair", label: "Choose chair", shortLabel: "Chair" },
   { id: "accessory", label: "Add your tools", shortLabel: "Add-ons" },
 ];
+
+const picturedAccessoryIdSet = new Set<string>(picturedAccessoryIds);
 
 function isWorkspaceSetup(value: unknown): value is WorkspaceSetup {
   if (!value || typeof value !== "object") return false;
@@ -103,6 +107,10 @@ function WorkspaceScene({
   const chair = getProduct(setup.chairId);
   const accessories = selected.filter((product) => product.category === "accessory");
   const sceneImage = getSceneRender(setup);
+  const completePicturedKit = hasCompletePicturedKit(setup);
+  const livePlacements = completePicturedKit
+    ? accessories.filter((product) => !picturedAccessoryIdSet.has(product.id))
+    : accessories;
 
   if (!desk || !chair) return null;
 
@@ -121,6 +129,29 @@ function WorkspaceScene({
           loading="eager"
           fetchPriority="high"
         />
+
+        {livePlacements.length > 0 && (
+          <div
+            className="scene-placement-rail"
+            aria-label="Add-ons placed in the live setup"
+          >
+            <span>Live placements</span>
+            <div>
+              {livePlacements.slice(0, 4).map((product) => (
+                <div className="scene-placement-item" key={product.id}>
+                  <img src={product.image} alt="" loading="eager" />
+                  <strong>
+                    {product.name}
+                    <small>Placed</small>
+                  </strong>
+                </div>
+              ))}
+              {livePlacements.length > 4 && (
+                <b>+{livePlacements.length - 4}</b>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="scene-status">
           <span>
@@ -458,6 +489,10 @@ export default function Home() {
                   >
                     <div className="photo-wrap">
                       <ProductPhoto product={product} priority={index < 2} />
+                      <span className="scene-match-badge">
+                        <i aria-hidden="true" />
+                        Scene matched
+                      </span>
                       <div className="card-badges">
                         {product.compareAtPrice && (
                           <span className="discount-badge">
