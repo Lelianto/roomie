@@ -11,7 +11,6 @@ export type Product = {
   weeklyPrice: number;
   compareAtPrice?: number;
   image: string;
-  sceneImage: string;
   badge?: "Instant" | "Popular" | "New";
   condition: "Excellent" | "Like new";
   stock: number;
@@ -20,7 +19,6 @@ export type Product = {
   weight?: string;
   features: string[];
   included: string[];
-  sceneClass: string;
 };
 
 export type WorkspaceSetup = {
@@ -51,7 +49,6 @@ export const products: Product[] = [
     weeklyPrice: 9,
     compareAtPrice: 18,
     image: "/products/desk-electric.jpg",
-    sceneImage: "/products/cutouts/desk-electric.png",
     badge: "Popular",
     condition: "Like new",
     stock: 4,
@@ -65,7 +62,6 @@ export const products: Product[] = [
       "Two cable-management ports",
     ],
     included: ["Desk", "Power cord", "Assembly & setup"],
-    sceneClass: "scene-desk-compact",
   },
   {
     id: "aerolift-160",
@@ -78,7 +74,6 @@ export const products: Product[] = [
     weeklyPrice: 12,
     compareAtPrice: 20,
     image: "/products/desk-electric-wide.jpg",
-    sceneImage: "/products/cutouts/desk-electric-wide.png",
     badge: "New",
     condition: "Like new",
     stock: 2,
@@ -92,7 +87,6 @@ export const products: Product[] = [
       "Integrated cable tray",
     ],
     included: ["Desk", "Cable tray", "Power cord", "Assembly & setup"],
-    sceneClass: "scene-desk-wide",
   },
   {
     id: "form-manual-120",
@@ -105,7 +99,6 @@ export const products: Product[] = [
     weeklyPrice: 7,
     compareAtPrice: 10,
     image: "/products/desk-manual.jpg",
-    sceneImage: "/products/cutouts/desk-manual.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 3,
@@ -119,7 +112,6 @@ export const products: Product[] = [
       "Stable steel frame",
     ],
     included: ["Desk", "Adjustment handle", "Assembly & setup"],
-    sceneClass: "scene-desk-oak",
   },
   {
     id: "ergoflex-4d",
@@ -132,7 +124,6 @@ export const products: Product[] = [
     weeklyPrice: 8,
     compareAtPrice: 16,
     image: "/products/chair-ergo.jpg",
-    sceneImage: "/products/cutouts/chair-ergo.png",
     badge: "Popular",
     condition: "Like new",
     stock: 5,
@@ -146,7 +137,6 @@ export const products: Product[] = [
       "Retractable leg rest",
     ],
     included: ["Chair", "Headrest", "Assembly & setup"],
-    sceneClass: "scene-chair-ergo",
   },
   {
     id: "focus-mesh",
@@ -159,7 +149,6 @@ export const products: Product[] = [
     weeklyPrice: 6,
     compareAtPrice: 10,
     image: "/products/chair-focus.jpg",
-    sceneImage: "/products/cutouts/chair-focus.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 3,
@@ -173,7 +162,6 @@ export const products: Product[] = [
       "Silent 60 mm casters",
     ],
     included: ["Chair", "Lumbar insert", "Assembly & setup"],
-    sceneClass: "scene-chair-focus",
   },
   {
     id: "viewpro-27",
@@ -186,7 +174,6 @@ export const products: Product[] = [
     weeklyPrice: 9,
     compareAtPrice: 12,
     image: "/products/monitor.jpg",
-    sceneImage: "/products/cutouts/monitor.png",
     badge: "Instant",
     condition: "Like new",
     stock: 6,
@@ -200,7 +187,6 @@ export const products: Product[] = [
       "Tilt-adjustable stand",
     ],
     included: ["Monitor", "HDMI cable", "USB-C cable", "Power cable"],
-    sceneClass: "scene-monitor",
   },
   {
     id: "mi-lamp-1s",
@@ -213,7 +199,6 @@ export const products: Product[] = [
     weeklyPrice: 2.5,
     compareAtPrice: 3.25,
     image: "/products/cutouts/lamp-generated.png",
-    sceneImage: "/products/cutouts/lamp-generated.png",
     badge: "Instant",
     condition: "Like new",
     stock: 4,
@@ -227,7 +212,6 @@ export const products: Product[] = [
       "Touch dimmer control",
     ],
     included: ["Lamp", "Power adapter", "Quick-start guide"],
-    sceneClass: "scene-lamp",
   },
   {
     id: "mx-keys",
@@ -240,7 +224,6 @@ export const products: Product[] = [
     weeklyPrice: 3,
     compareAtPrice: 3.75,
     image: "/products/keyboard.jpg",
-    sceneImage: "/products/cutouts/keyboard.png",
     badge: "Popular",
     condition: "Excellent",
     stock: 7,
@@ -254,7 +237,6 @@ export const products: Product[] = [
       "Up to five months battery",
     ],
     included: ["Keyboard", "USB receiver", "USB-C cable"],
-    sceneClass: "scene-keyboard",
   },
   {
     id: "mx-master-3s",
@@ -267,7 +249,6 @@ export const products: Product[] = [
     weeklyPrice: 3,
     compareAtPrice: 3.75,
     image: "/products/mouse.jpg",
-    sceneImage: "/products/cutouts/mouse.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 8,
@@ -281,7 +262,6 @@ export const products: Product[] = [
       "Up to 70 days battery",
     ],
     included: ["Mouse", "USB receiver", "USB-C cable"],
-    sceneClass: "scene-mouse",
   },
   {
     id: "alloy-stand",
@@ -294,7 +274,6 @@ export const products: Product[] = [
     weeklyPrice: 1.5,
     compareAtPrice: 2,
     image: "/products/laptop-stand.jpg",
-    sceneImage: "/products/cutouts/laptop-stand.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 9,
@@ -308,7 +287,6 @@ export const products: Product[] = [
       "Cable pass-through",
     ],
     included: ["Laptop stand"],
-    sceneClass: "scene-stand",
   },
   {
     id: "smart-strip",
@@ -320,7 +298,6 @@ export const products: Product[] = [
       "Three universal sockets plus USB charging in a tidy two-meter desktop strip.",
     weeklyPrice: 0.75,
     image: "/products/power-strip.jpg",
-    sceneImage: "/products/cutouts/power-strip.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 12,
@@ -334,7 +311,6 @@ export const products: Product[] = [
       "Overload protection",
     ],
     included: ["Power strip", "EU wall adapter"],
-    sceneClass: "scene-power",
   },
 ];
 
@@ -400,6 +376,33 @@ export function getSetupProducts(setup: WorkspaceSetup) {
       product.id === setup.chairId ||
       setup.accessoryIds.includes(product.id),
   );
+}
+
+export function getSceneRender(setup: WorkspaceSetup) {
+  const desk =
+    ({
+      "aerolift-120": "compact",
+      "aerolift-160": "wide",
+      "form-manual-120": "oak",
+    } as Record<string, string>)[setup.deskId] ?? "compact";
+  const chair =
+    ({
+      "ergoflex-4d": "ergonomic",
+      "focus-mesh": "focus",
+    } as Record<string, string>)[setup.chairId] ?? "ergonomic";
+  const picturedAccessories = [
+    "viewpro-27",
+    "mi-lamp-1s",
+    "mx-keys",
+    "mx-master-3s",
+  ];
+  const equipment = picturedAccessories.every((id) =>
+    setup.accessoryIds.includes(id),
+  )
+    ? "-equipped"
+    : "";
+
+  return `/scene/renders/${desk}-${chair}${equipment}.webp`;
 }
 
 export function productPrice(product: Product, cycle: RentalCycle) {

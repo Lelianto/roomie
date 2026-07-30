@@ -12,6 +12,7 @@ import {
 import {
   bundles,
   getProduct,
+  getSceneRender,
   getSetupProducts,
   initialSetup,
   productPrice,
@@ -90,75 +91,43 @@ function WorkspaceScene({
   setup,
   cycle,
   total,
+  sceneId,
 }: {
   setup: WorkspaceSetup;
   cycle: RentalCycle;
   total: number;
+  sceneId: string;
 }) {
   const selected = getSetupProducts(setup);
   const desk = getProduct(setup.deskId);
   const chair = getProduct(setup.chairId);
   const accessories = selected.filter((product) => product.category === "accessory");
-  const lampOn = setup.accessoryIds.includes("mi-lamp-1s");
+  const sceneImage = getSceneRender(setup);
 
   if (!desk || !chair) return null;
 
   return (
     <figure
-      className={`real-scene ${lampOn ? "lamp-is-on" : ""}`}
-      aria-labelledby="scene-title"
+      className="real-scene"
+      aria-labelledby={sceneId}
     >
       <div className="scene-room">
-        <div className="sunwash" aria-hidden="true" />
-        <div className="room-window" aria-hidden="true">
-          <i />
-          <i />
-        </div>
-        <div className="room-print print-one" aria-hidden="true" />
-        <div className="room-print print-two" aria-hidden="true" />
-        <div className="floor-shadow" aria-hidden="true" />
-        <div className="scene-rug" aria-hidden="true" />
-
-        <div className={`scene-product ${desk.sceneClass}`}>
-          <img
-            src={desk.sceneImage}
-            alt=""
-            sizes="(max-width: 820px) 90vw, 55vw"
-            className="scene-cutout"
-            loading="eager"
-            fetchPriority="high"
-          />
-        </div>
-
-        {accessories.map((product) => (
-          <div className={`scene-product ${product.sceneClass}`} key={product.id}>
-            <img
-              src={product.sceneImage}
-              alt=""
-              sizes="(max-width: 820px) 30vw, 18vw"
-              className="scene-cutout"
-              loading="lazy"
-            />
-          </div>
-        ))}
-
-        <div className={`scene-product ${chair.sceneClass}`}>
-          <img
-            src={chair.sceneImage}
-            alt=""
-            sizes="(max-width: 820px) 38vw, 22vw"
-            className="scene-cutout"
-            loading="eager"
-            fetchPriority="high"
-          />
-        </div>
+        <img
+          key={sceneImage}
+          src={sceneImage}
+          alt=""
+          sizes="(max-width: 900px) 100vw, 54vw"
+          className="scene-composite"
+          loading="eager"
+          fetchPriority="high"
+        />
 
         <div className="scene-status">
           <span>
             <i aria-hidden="true" />
             Live setup
           </span>
-          <strong id="scene-title">{selected.length} pieces in your room</strong>
+          <strong id={sceneId}>{selected.length} pieces in your room</strong>
         </div>
 
         <div className="scene-price">
@@ -167,6 +136,23 @@ function WorkspaceScene({
             {formatMoney.format(total)}
             <small>/{cycleLabel(cycle)}</small>
           </strong>
+        </div>
+      </div>
+      <div className="scene-selection-strip">
+        <span>In this setup</span>
+        <strong>{desk.name}</strong>
+        <strong>{chair.name}</strong>
+        <div className="scene-accessory-list">
+          {accessories.length > 0 ? (
+            accessories.map((product) => (
+              <small key={product.id}>
+                <i aria-hidden="true">✓</i>
+                {product.name}
+              </small>
+            ))
+          ) : (
+            <small>No add-ons selected</small>
+          )}
         </div>
       </div>
       <figcaption className="sr-only">
@@ -425,6 +411,15 @@ export default function Home() {
             <span>Demo inventory · {location}</span>
           </div>
 
+          <div className="mobile-scene-panel">
+            <WorkspaceScene
+              setup={setup}
+              cycle={cycle}
+              total={total}
+              sceneId="mobile-scene-title"
+            />
+          </div>
+
           <nav className="step-nav" aria-label="Workspace configuration steps">
             {steps.map((step, index) => {
               const complete =
@@ -534,7 +529,12 @@ export default function Home() {
 
         <aside className="preview-panel">
           <div className="preview-sticky">
-            <WorkspaceScene setup={setup} cycle={cycle} total={total} />
+            <WorkspaceScene
+              setup={setup}
+              cycle={cycle}
+              total={total}
+              sceneId="desktop-scene-title"
+            />
             <div className="preview-meta">
               <div>
                 <span>Selected setup</span>

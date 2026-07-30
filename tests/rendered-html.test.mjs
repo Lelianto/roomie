@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -51,9 +51,9 @@ test("ships typed catalog data and local persistence", async () => {
 
   assert.match(catalog, /export type Product = \{/);
   assert.match(catalog, /weeklyPrice: number/);
-  assert.match(catalog, /sceneImage: string/);
   assert.match(catalog, /lamp-generated\.png/);
-  assert.match(catalog, /sceneClass: string/);
+  assert.match(catalog, /export function getSceneRender/);
+  assert.match(catalog, /-equipped/);
   assert.match(catalog, /inventory|stock:/i);
   assert.match(page, /window\.localStorage/);
   assert.match(page, /showModal/);
@@ -62,7 +62,34 @@ test("ships typed catalog data and local persistence", async () => {
   assert.match(layout, /Roomie — Build a workspace that works/);
   assert.match(
     await readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-    /room-base\.webp/,
+    /scene-composite/,
   );
+  assert.doesNotMatch(page, /scene-cutout|product\.sceneImage/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+});
+
+test("ships a complete set of precomposed room scenes", async () => {
+  const files = await readdir(
+    new URL("../public/scene/renders/", import.meta.url),
+  );
+  const expected = [
+    "compact-ergonomic-equipped.webp",
+    "compact-ergonomic.webp",
+    "compact-focus-equipped.webp",
+    "compact-focus.webp",
+    "oak-ergonomic-equipped.webp",
+    "oak-ergonomic.webp",
+    "oak-focus-equipped.webp",
+    "oak-focus.webp",
+    "wide-ergonomic-equipped.webp",
+    "wide-ergonomic.webp",
+    "wide-focus-equipped.webp",
+    "wide-focus.webp",
+  ];
+
+  assert.deepEqual(
+    files.filter((file) => file.endsWith(".webp")).sort(),
+    expected.sort(),
+  );
+  assert.equal(files.some((file) => file.endsWith(".png")), false);
 });
