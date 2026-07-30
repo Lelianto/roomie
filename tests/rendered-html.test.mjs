@@ -61,7 +61,8 @@ test("ships typed catalog data and local persistence", async () => {
   assert.match(catalog, /inventory|stock:/i);
   assert.match(page, /window\.localStorage/);
   assert.match(page, /showModal/);
-  assert.match(page, /scene-placement-rail/);
+  assert.match(page, /scene-accessory-stage/);
+  assert.match(page, /product\.sceneOverlay/);
   assert.match(page, /aria-checked=\{selected\}/);
   assert.match(page, /type="date"/);
   assert.match(layout, /Roomie — Build a workspace that works/);
@@ -69,7 +70,7 @@ test("ships typed catalog data and local persistence", async () => {
     await readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     /scene-composite/,
   );
-  assert.doesNotMatch(page, /scene-cutout|product\.sceneImage/);
+  assert.doesNotMatch(page, /scene-placement-rail|scene-cutout|product\.sceneImage/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
 

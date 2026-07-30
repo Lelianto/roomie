@@ -11,6 +11,7 @@ export type Product = {
   weeklyPrice: number;
   compareAtPrice?: number;
   image: string;
+  sceneOverlay?: string;
   badge?: "Instant" | "Popular" | "New";
   condition: "Excellent" | "Like new";
   stock: number;
@@ -174,6 +175,7 @@ export const products: Product[] = [
     weeklyPrice: 9,
     compareAtPrice: 12,
     image: "/products/generated/viewpro-27.webp",
+    sceneOverlay: "/products/overlays/monitor.png",
     badge: "Instant",
     condition: "Like new",
     stock: 6,
@@ -199,6 +201,7 @@ export const products: Product[] = [
     weeklyPrice: 2.5,
     compareAtPrice: 3.25,
     image: "/products/generated/line-task-lamp.webp",
+    sceneOverlay: "/products/overlays/lamp.png",
     badge: "Instant",
     condition: "Like new",
     stock: 4,
@@ -224,6 +227,7 @@ export const products: Product[] = [
     weeklyPrice: 3,
     compareAtPrice: 3.75,
     image: "/products/generated/mx-keys.webp",
+    sceneOverlay: "/products/overlays/keyboard.png",
     badge: "Popular",
     condition: "Excellent",
     stock: 7,
@@ -249,6 +253,7 @@ export const products: Product[] = [
     weeklyPrice: 3,
     compareAtPrice: 3.75,
     image: "/products/generated/mx-master-3s.webp",
+    sceneOverlay: "/products/overlays/mouse.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 8,
@@ -274,6 +279,7 @@ export const products: Product[] = [
     weeklyPrice: 1.5,
     compareAtPrice: 2,
     image: "/products/generated/alloy-stand.webp",
+    sceneOverlay: "/products/overlays/stand.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 9,
@@ -298,6 +304,7 @@ export const products: Product[] = [
       "Three universal sockets plus USB charging in a tidy two-meter desktop strip.",
     weeklyPrice: 0.75,
     image: "/products/generated/smart-strip.webp",
+    sceneOverlay: "/products/overlays/strip.png",
     badge: "Instant",
     condition: "Excellent",
     stock: 12,

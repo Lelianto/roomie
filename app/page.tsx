@@ -116,7 +116,7 @@ function WorkspaceScene({
 
   return (
     <figure
-      className="real-scene"
+      className={`real-scene scene-desk-${setup.deskId}`}
       aria-labelledby={sceneId}
     >
       <div className="scene-room">
@@ -130,28 +130,19 @@ function WorkspaceScene({
           fetchPriority="high"
         />
 
-        {livePlacements.length > 0 && (
-          <div
-            className="scene-placement-rail"
-            aria-label="Add-ons placed in the live setup"
-          >
-            <span>Live placements</span>
-            <div>
-              {livePlacements.slice(0, 4).map((product) => (
-                <div className="scene-placement-item" key={product.id}>
-                  <img src={product.image} alt="" loading="eager" />
-                  <strong>
-                    {product.name}
-                    <small>Placed</small>
-                  </strong>
-                </div>
-              ))}
-              {livePlacements.length > 4 && (
-                <b>+{livePlacements.length - 4}</b>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="scene-accessory-stage" aria-label="Accessories placed in the live setup">
+          {livePlacements.map((product) =>
+            product.sceneOverlay ? (
+              <img
+                key={product.id}
+                src={product.sceneOverlay}
+                alt=""
+                className={`scene-accessory scene-accessory-${product.id}`}
+                loading="eager"
+              />
+            ) : null,
+          )}
+        </div>
 
         <div className="scene-status">
           <span>
