@@ -30,27 +30,39 @@ test("server-renders the complete workspace builder", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Roomie — Build a workspace that works<\/title>/i);
-  assert.match(html, /Make space for/);
   assert.match(html, /Build your room/);
-  assert.match(html, /Studio Desk/);
-  assert.match(html, /Form Chair/);
-  assert.match(html, /Live workspace/);
-  assert.match(html, /\$874/);
+  assert.match(html, /See it come alive/);
+  assert.match(html, /AeroLift 120/);
+  assert.match(html, /ErgoFlex 4D/);
+  assert.match(html, /Live setup/);
+  assert.match(html, /Curated bundles/);
+  assert.match(html, /Monthly/);
+  assert.match(html, /Demo inventory/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
 test("ships typed catalog data and local persistence", async () => {
-  const [page, layout, packageJson] = await Promise.all([
+  const [page, catalog, layout, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/catalog.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /type Product = \{/);
-  assert.match(page, /category: Category/);
+  assert.match(catalog, /export type Product = \{/);
+  assert.match(catalog, /weeklyPrice: number/);
+  assert.match(catalog, /sceneImage: string/);
+  assert.match(catalog, /lamp-generated\.png/);
+  assert.match(catalog, /sceneClass: string/);
+  assert.match(catalog, /inventory|stock:/i);
   assert.match(page, /window\.localStorage/);
-  assert.match(page, /role="dialog"/);
-  assert.match(page, /aria-pressed=\{selected\}/);
+  assert.match(page, /showModal/);
+  assert.match(page, /aria-checked=\{selected\}/);
+  assert.match(page, /type="date"/);
   assert.match(layout, /Roomie — Build a workspace that works/);
+  assert.match(
+    await readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    /room-base\.webp/,
+  );
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

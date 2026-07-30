@@ -1,285 +1,259 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
 
-type Category = "desk" | "chair" | "accessory";
-type Finish = "walnut" | "oak" | "black";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import {
+  bundles,
+  getProduct,
+  getSetupProducts,
+  initialSetup,
+  productPrice,
+  products,
+  setupPrice,
+  type Bundle,
+  type Category,
+  type Product,
+  type RentalCycle,
+  type WorkspaceSetup,
+} from "@/lib/catalog";
 
-type Product = {
-  id: string;
-  category: Category;
-  name: string;
-  eyebrow: string;
-  description: string;
-  price: number;
-  finish: Finish;
-};
-
-type Setup = {
-  deskId: string;
-  chairId: string;
-  accessoryIds: string[];
-};
-
-const products: Product[] = [
-  {
-    id: "frame-desk",
-    category: "desk",
-    name: "Frame Desk",
-    eyebrow: "Calm & focused",
-    description: "A slim oak desk with soft edges and cable management.",
-    price: 320,
-    finish: "oak",
-  },
-  {
-    id: "studio-desk",
-    category: "desk",
-    name: "Studio Desk",
-    eyebrow: "Room to create",
-    description: "A wider walnut surface for bigger ideas and dual screens.",
-    price: 460,
-    finish: "walnut",
-  },
-  {
-    id: "rise-desk",
-    category: "desk",
-    name: "Rise Desk",
-    eyebrow: "Sit. Stand. Repeat.",
-    description: "An adjustable black desk built for long, flexible days.",
-    price: 590,
-    finish: "black",
-  },
-  {
-    id: "form-chair",
-    category: "chair",
-    name: "Form Chair",
-    eyebrow: "Support, simplified",
-    description: "Breathable ergonomic support with a compact silhouette.",
-    price: 180,
-    finish: "black",
-  },
-  {
-    id: "soft-chair",
-    category: "chair",
-    name: "Soft Chair",
-    eyebrow: "Comfort first",
-    description: "Generous cushioning in a warm neutral woven fabric.",
-    price: 240,
-    finish: "oak",
-  },
-  {
-    id: "arc-chair",
-    category: "chair",
-    name: "Arc Chair",
-    eyebrow: "A design classic",
-    description: "Sculpted walnut and leather for a considered workspace.",
-    price: 310,
-    finish: "walnut",
-  },
-  {
-    id: "wide-monitor",
-    category: "accessory",
-    name: "Studio Display",
-    eyebrow: "32-inch 4K",
-    description: "A crisp, generous canvas for deep work.",
-    price: 210,
-    finish: "black",
-  },
-  {
-    id: "task-lamp",
-    category: "accessory",
-    name: "Task Lamp",
-    eyebrow: "Warm dimmable light",
-    description: "Focused light that keeps evenings comfortable.",
-    price: 48,
-    finish: "black",
-  },
-  {
-    id: "desk-plant",
-    category: "accessory",
-    name: "Desk Plant",
-    eyebrow: "A little life",
-    description: "Low-maintenance greenery in a stone pot.",
-    price: 24,
-    finish: "oak",
-  },
-  {
-    id: "organizer",
-    category: "accessory",
-    name: "Desk Organizer",
-    eyebrow: "Everything in place",
-    description: "A compact tray for notes, cables, and daily tools.",
-    price: 36,
-    finish: "walnut",
-  },
-];
-
-const categories: { id: Category; label: string }[] = [
-  { id: "desk", label: "Desks" },
-  { id: "chair", label: "Chairs" },
-  { id: "accessory", label: "Accessories" },
-];
-
-const currency = new Intl.NumberFormat("en-US", {
+const formatMoney = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
-const initialSetup: Setup = {
-  deskId: "studio-desk",
-  chairId: "form-chair",
-  accessoryIds: ["wide-monitor", "desk-plant"],
-};
+const steps: { id: Category; label: string; shortLabel: string }[] = [
+  { id: "desk", label: "Choose desk", shortLabel: "Desk" },
+  { id: "chair", label: "Choose chair", shortLabel: "Chair" },
+  { id: "accessory", label: "Add your tools", shortLabel: "Add-ons" },
+];
 
-function ProductIcon({ product }: { product: Product }) {
-  if (product.category === "desk") {
-    return (
-      <div className={`mini-desk finish-${product.finish}`} aria-hidden="true">
-        <span />
-      </div>
-    );
-  }
-
-  if (product.category === "chair") {
-    return (
-      <div className={`mini-chair finish-${product.finish}`} aria-hidden="true">
-        <span />
-      </div>
-    );
-  }
-
-  const symbols: Record<string, string> = {
-    "wide-monitor": "▰",
-    "task-lamp": "⌁",
-    "desk-plant": "✣",
-    organizer: "▤",
-  };
-
+function isWorkspaceSetup(value: unknown): value is WorkspaceSetup {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<WorkspaceSetup>;
+  const ids = new Set(products.map((product) => product.id));
   return (
-    <span className={`accessory-symbol finish-${product.finish}`} aria-hidden="true">
-      {symbols[product.id]}
+    typeof candidate.deskId === "string" &&
+    typeof candidate.chairId === "string" &&
+    ids.has(candidate.deskId) &&
+    ids.has(candidate.chairId) &&
+    Array.isArray(candidate.accessoryIds) &&
+    candidate.accessoryIds.every((id) => typeof id === "string" && ids.has(id)) &&
+    (candidate.bundleId === null || typeof candidate.bundleId === "string")
+  );
+}
+
+function cycleLabel(cycle: RentalCycle) {
+  return cycle === "weekly" ? "week" : "month";
+}
+
+function ProductPhoto({
+  product,
+  sizes = "160px",
+  priority = false,
+}: {
+  product: Product;
+  sizes?: string;
+  priority?: boolean;
+}) {
+  return (
+    <img
+      src={product.image}
+      alt={product.name}
+      sizes={sizes}
+      className="product-photo"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+    />
+  );
+}
+
+function Availability({ product }: { product: Product }) {
+  return (
+    <span className="availability">
+      <i aria-hidden="true" />
+      {product.stock} available in Bali
     </span>
   );
 }
 
 function WorkspaceScene({
-  desk,
-  chair,
-  accessories,
+  setup,
+  cycle,
+  total,
 }: {
-  desk: Product;
-  chair: Product;
-  accessories: Product[];
+  setup: WorkspaceSetup;
+  cycle: RentalCycle;
+  total: number;
 }) {
-  const has = (id: string) => accessories.some((item) => item.id === id);
+  const selected = getSetupProducts(setup);
+  const desk = getProduct(setup.deskId);
+  const chair = getProduct(setup.chairId);
+  const accessories = selected.filter((product) => product.category === "accessory");
+  const lampOn = setup.accessoryIds.includes("mi-lamp-1s");
+
+  if (!desk || !chair) return null;
 
   return (
-    <div className="scene" aria-label={`Preview with ${desk.name}, ${chair.name}, and ${accessories.length} accessories`}>
-      <div className="scene-glow" />
-      <div className="wall-line" />
-      <div className="scene-caption">
-        <span>Live workspace</span>
-        <strong>Calm corner · 01</strong>
-      </div>
-      <div className="art art-one" />
-      <div className="art art-two" />
-      {has("task-lamp") && (
-        <div className="lamp" aria-hidden="true">
+    <figure
+      className={`real-scene ${lampOn ? "lamp-is-on" : ""}`}
+      aria-labelledby="scene-title"
+    >
+      <div className="scene-room">
+        <div className="sunwash" aria-hidden="true" />
+        <div className="room-window" aria-hidden="true">
           <i />
-          <b />
+          <i />
         </div>
-      )}
-      {has("wide-monitor") && (
-        <div className="monitor" aria-hidden="true">
-          <div className="monitor-screen">
-            <span />
-            <span />
-            <span />
+        <div className="room-print print-one" aria-hidden="true" />
+        <div className="room-print print-two" aria-hidden="true" />
+        <div className="floor-shadow" aria-hidden="true" />
+        <div className="scene-rug" aria-hidden="true" />
+
+        <div className={`scene-product ${desk.sceneClass}`}>
+          <img
+            src={desk.sceneImage}
+            alt=""
+            sizes="(max-width: 820px) 90vw, 55vw"
+            className="scene-cutout"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </div>
+
+        {accessories.map((product) => (
+          <div className={`scene-product ${product.sceneClass}`} key={product.id}>
+            <img
+              src={product.sceneImage}
+              alt=""
+              sizes="(max-width: 820px) 30vw, 18vw"
+              className="scene-cutout"
+              loading="lazy"
+            />
           </div>
-          <i />
+        ))}
+
+        <div className={`scene-product ${chair.sceneClass}`}>
+          <img
+            src={chair.sceneImage}
+            alt=""
+            sizes="(max-width: 820px) 38vw, 22vw"
+            className="scene-cutout"
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
-      )}
-      {has("desk-plant") && (
-        <div className="plant" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <b />
+
+        <div className="scene-status">
+          <span>
+            <i aria-hidden="true" />
+            Live setup
+          </span>
+          <strong id="scene-title">{selected.length} pieces in your room</strong>
         </div>
-      )}
-      {has("organizer") && (
-        <div className="organizer" aria-hidden="true">
-          <span />
-          <span />
-          <span />
+
+        <div className="scene-price">
+          <span>Rental total</span>
+          <strong>
+            {formatMoney.format(total)}
+            <small>/{cycleLabel(cycle)}</small>
+          </strong>
         </div>
-      )}
-      <div className={`workspace-desk finish-${desk.finish}`} aria-hidden="true">
-        <div className="desktop" />
-        <div className="drawer">
-          <span />
-          <span />
-        </div>
-        <i className="leg leg-left" />
-        <i className="leg leg-right" />
       </div>
-      <div className={`workspace-chair chair-${chair.id} finish-${chair.finish}`} aria-hidden="true">
-        <div className="chair-back" />
-        <div className="chair-seat" />
-        <div className="chair-stem" />
-        <div className="chair-base" />
-      </div>
-      <div className="rug" aria-hidden="true" />
-    </div>
+      <figcaption className="sr-only">
+        Workspace preview showing {desk.name}, {chair.name}, and{" "}
+        {accessories.map((item) => item.name).join(", ") || "no accessories"}.
+      </figcaption>
+    </figure>
+  );
+}
+
+function BundleCard({
+  bundle,
+  active,
+  onSelect,
+}: {
+  bundle: Bundle;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      className={`bundle-card ${active ? "active" : ""}`}
+      onClick={onSelect}
+      aria-pressed={active}
+    >
+      <span className="bundle-label">{bundle.label}</span>
+      <strong>{bundle.name}</strong>
+      <p>{bundle.description}</p>
+      <span className="bundle-saving">Save {Math.round(bundle.discount * 100)}%</span>
+      <i aria-hidden="true">{active ? "✓" : "→"}</i>
+    </button>
   );
 }
 
 export default function Home() {
-  const [activeCategory, setActiveCategory] = useState<Category>("desk");
-  const [setup, setSetup] = useState<Setup>(initialSetup);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState<Category>("desk");
+  const [setup, setSetup] = useState<WorkspaceSetup>(initialSetup);
+  const [cycle, setCycle] = useState<RentalCycle>("weekly");
+  const [location, setLocation] = useState("Bali");
+  const [deliveryDate, setDeliveryDate] = useState("2026-08-01");
+  const [deliveryType, setDeliveryType] = useState<"regular" | "priority">(
+    "regular",
+  );
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const [isRestored, setIsRestored] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [address, setAddress] = useState("");
+  const detailsDialogRef = useRef<HTMLDialogElement>(null);
+  const reviewDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    const restoreSavedSetup = window.setTimeout(() => {
-      const saved = window.localStorage.getItem("roomie-workspace");
+    const restore = window.setTimeout(() => {
+      const saved = window.localStorage.getItem("roomie-workspace-v2");
       if (saved) {
         try {
-          setSetup(JSON.parse(saved) as Setup);
+          const parsed: unknown = JSON.parse(saved);
+          if (isWorkspaceSetup(parsed)) setSetup(parsed);
         } catch {
-          window.localStorage.removeItem("roomie-workspace");
+          window.localStorage.removeItem("roomie-workspace-v2");
         }
       }
-      setIsReady(true);
+      setIsRestored(true);
     }, 0);
-
-    return () => window.clearTimeout(restoreSavedSetup);
+    return () => window.clearTimeout(restore);
   }, []);
 
   useEffect(() => {
-    if (isReady) {
-      window.localStorage.setItem("roomie-workspace", JSON.stringify(setup));
+    if (isRestored) {
+      window.localStorage.setItem("roomie-workspace-v2", JSON.stringify(setup));
     }
-  }, [isReady, setup]);
+  }, [isRestored, setup]);
 
-  useEffect(() => {
-    document.body.style.overflow = isReviewOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isReviewOpen]);
-
-  const visibleProducts = products.filter((product) => product.category === activeCategory);
-  const desk = products.find((product) => product.id === setup.deskId) ?? products[0];
-  const chair = products.find((product) => product.id === setup.chairId) ?? products[3];
-  const accessories = products.filter((product) => setup.accessoryIds.includes(product.id));
-  const selectedProducts = useMemo(
-    () => [desk, chair, ...accessories],
-    [desk, chair, accessories],
+  const visibleProducts = products.filter(
+    (product) => product.category === activeStep,
   );
-  const total = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+  const selectedProducts = useMemo(() => getSetupProducts(setup), [setup]);
+  const activeBundle = bundles.find((bundle) => bundle.id === setup.bundleId);
+  const subtotal = selectedProducts.reduce(
+    (sum, product) => sum + productPrice(product, cycle),
+    0,
+  );
+  const total = setupPrice(setup, cycle);
+  const discount = subtotal - total;
+  const deliveryFee = deliveryType === "priority" ? 5 : 0;
+  const orderTotal = total + deliveryFee;
+  const currentStepIndex = steps.findIndex((step) => step.id === activeStep);
 
   function isSelected(product: Product) {
     if (product.category === "desk") return setup.deskId === product.id;
@@ -287,169 +261,328 @@ export default function Home() {
     return setup.accessoryIds.includes(product.id);
   }
 
-  function toggleProduct(product: Product) {
+  function selectProduct(product: Product) {
+    const selected = isSelected(product);
     setIsConfirmed(false);
     setSetup((current) => {
-      if (product.category === "desk") return { ...current, deskId: product.id };
-      if (product.category === "chair") return { ...current, chairId: product.id };
-      const exists = current.accessoryIds.includes(product.id);
+      if (product.category === "desk") {
+        return { ...current, deskId: product.id };
+      }
+      if (product.category === "chair") {
+        return { ...current, chairId: product.id };
+      }
       return {
         ...current,
-        accessoryIds: exists
+        accessoryIds: selected
           ? current.accessoryIds.filter((id) => id !== product.id)
           : [...current.accessoryIds, product.id],
       };
     });
+    setAnnouncement(
+      product.category === "accessory"
+        ? `${product.name} ${selected ? "removed from" : "added to"} your workspace.`
+        : `${product.name} selected.`,
+    );
   }
 
-  function resetSetup() {
-    setSetup(initialSetup);
+  function selectBundle(bundle: Bundle) {
+    setSetup({ ...bundle.setup, bundleId: bundle.id });
+    setActiveStep("desk");
     setIsConfirmed(false);
+    setAnnouncement(`${bundle.name} bundle loaded. You can customize every item.`);
+  }
+
+  function goToNextStep() {
+    const next = steps[currentStepIndex + 1];
+    if (next) {
+      setActiveStep(next.id);
+      document
+        .getElementById("customize")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      openReview();
+    }
+  }
+
+  function openDetails(product: Product) {
+    setDetailProduct(product);
+    window.requestAnimationFrame(() => detailsDialogRef.current?.showModal());
+  }
+
+  function closeDetails() {
+    detailsDialogRef.current?.close();
+  }
+
+  function openReview() {
+    setIsConfirmed(false);
+    window.requestAnimationFrame(() => reviewDialogRef.current?.showModal());
+  }
+
+  function closeReview() {
+    reviewDialogRef.current?.close();
+  }
+
+  function submitRental(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsConfirmed(true);
   }
 
   return (
     <main>
-      <header className="site-header">
+      <header className="app-header">
         <a className="brand" href="#" aria-label="Roomie home">
           roomie<span>.</span>
         </a>
-        <div className="header-step">
-          <span>01</span>
-          <p>
-            Workspace builder
-            <small>Design yours in minutes</small>
-          </p>
+
+        <div className="rental-context">
+          <label>
+            <span>Location</span>
+            <select value={location} onChange={(event) => setLocation(event.target.value)}>
+              <option>Bali</option>
+              <option>Jakarta</option>
+              <option>Surabaya</option>
+            </select>
+          </label>
+          <label>
+            <span>Delivery</span>
+            <input
+              type="date"
+              value={deliveryDate}
+              min="2026-07-31"
+              onChange={(event) => setDeliveryDate(event.target.value)}
+            />
+          </label>
         </div>
-        <button className="bag-button" onClick={() => setIsReviewOpen(true)}>
+
+        <button className="header-review" onClick={openReview}>
           <span>Review setup</span>
           <b>{selectedProducts.length}</b>
         </button>
       </header>
 
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="kicker">Your desk. Your rhythm.</p>
+      <section className="intro">
+        <div>
+          <p className="eyebrow">Workspace rental, made personal</p>
           <h1>
-            Make space for
+            Build your room.
             <br />
-            <em>your best work.</em>
+            <em>See it come alive.</em>
           </h1>
-          <p className="hero-description">
-            Curate a workspace that looks considered, feels comfortable, and arrives ready to use.
-          </p>
         </div>
-        <div className="hero-note">
-          <span className="spark">✦</span>
+        <div className="intro-side">
           <p>
-            Choose your pieces.
-            <br />
-            We&apos;ll handle the rest.
+            Select real equipment, preview the complete setup, and have it delivered
+            and assembled at your door.
           </p>
+          <div className="cycle-switch" aria-label="Rental period">
+            <button
+              className={cycle === "weekly" ? "active" : ""}
+              onClick={() => setCycle("weekly")}
+              aria-pressed={cycle === "weekly"}
+            >
+              Weekly
+            </button>
+            <button
+              className={cycle === "monthly" ? "active" : ""}
+              onClick={() => setCycle("monthly")}
+              aria-pressed={cycle === "monthly"}
+            >
+              Monthly <span>Save 25%</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="builder" aria-labelledby="builder-title">
-        <div className="catalog">
-          <div className="section-heading">
+      <section className="bundle-section" aria-labelledby="bundles-title">
+        <div className="section-intro">
+          <div>
+            <p className="eyebrow">Curated bundles</p>
+            <h2 id="bundles-title">Start complete. Make it yours.</h2>
+          </div>
+          <p>
+            Load a proven setup in one tap, then replace or remove anything.
+          </p>
+        </div>
+        <div className="bundle-row">
+          {bundles.map((bundle) => (
+            <BundleCard
+              bundle={bundle}
+              active={setup.bundleId === bundle.id}
+              onSelect={() => selectBundle(bundle)}
+              key={bundle.id}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="configurator" id="customize" aria-labelledby="customize-title">
+        <div className="catalog-panel">
+          <div className="catalog-heading">
             <div>
-              <p className="kicker">Build your room</p>
-              <h2 id="builder-title">Start with the essentials.</h2>
+              <p className="eyebrow">Customize</p>
+              <h2 id="customize-title">Shape every detail.</h2>
             </div>
-            <button className="reset-button" onClick={resetSetup}>
-              Reset setup
-            </button>
+            <span>Demo inventory · {location}</span>
           </div>
 
-          <div className="tabs" role="tablist" aria-label="Product categories">
-            {categories.map((category, index) => (
-              <button
-                key={category.id}
-                role="tab"
-                aria-selected={activeCategory === category.id}
-                className={activeCategory === category.id ? "active" : ""}
-                onClick={() => setActiveCategory(category.id)}
-              >
-                <span>0{index + 1}</span>
-                {category.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="product-list">
-            {visibleProducts.map((product) => {
-              const selected = isSelected(product);
+          <nav className="step-nav" aria-label="Workspace configuration steps">
+            {steps.map((step, index) => {
+              const complete =
+                step.id === "desk" ||
+                step.id === "chair" ||
+                (step.id === "accessory" && setup.accessoryIds.length > 0);
               return (
                 <button
-                  className={`product-card ${selected ? "selected" : ""}`}
-                  key={product.id}
-                  onClick={() => toggleProduct(product)}
-                  aria-pressed={selected}
+                  key={step.id}
+                  className={activeStep === step.id ? "active" : ""}
+                  onClick={() => setActiveStep(step.id)}
+                  aria-current={activeStep === step.id ? "step" : undefined}
                 >
-                  <div className="product-visual">
-                    <ProductIcon product={product} />
-                    <span className="selection-mark">{selected ? "✓" : "+"}</span>
-                  </div>
-                  <div className="product-copy">
-                    <small>{product.eyebrow}</small>
-                    <h3>{product.name}</h3>
-                    <p>{product.description}</p>
-                    <strong>{currency.format(product.price)} / mo</strong>
-                  </div>
+                  <span>{complete ? "✓" : `0${index + 1}`}</span>
+                  <b>{step.shortLabel}</b>
                 </button>
               );
             })}
+          </nav>
+
+          <div
+            className="product-grid"
+            role={activeStep === "accessory" ? "group" : "radiogroup"}
+            aria-label={steps[currentStepIndex].label}
+          >
+            {visibleProducts.map((product, index) => {
+              const selected = isSelected(product);
+              return (
+                <article className={`real-product-card ${selected ? "selected" : ""}`} key={product.id}>
+                  <button
+                    className="product-select"
+                    onClick={() => selectProduct(product)}
+                    role={activeStep === "accessory" ? "checkbox" : "radio"}
+                    aria-checked={selected}
+                    aria-label={`${selected ? "Selected" : "Select"} ${product.name}`}
+                  >
+                    <div className="photo-wrap">
+                      <ProductPhoto product={product} priority={index < 2} />
+                      <div className="card-badges">
+                        {product.compareAtPrice && (
+                          <span className="discount-badge">
+                            -
+                            {Math.round(
+                              (1 - product.weeklyPrice / product.compareAtPrice) * 100,
+                            )}
+                            %
+                          </span>
+                        )}
+                        {product.badge && <span>{product.badge}</span>}
+                      </div>
+                      <span className="select-control">{selected ? "✓" : "+"}</span>
+                    </div>
+                    <div className="card-content">
+                      <span className="brand-model">
+                        {product.brand} · {product.model}
+                      </span>
+                      <h3>{product.name}</h3>
+                      <p>{product.description}</p>
+                      <div className="card-facts">
+                        <span>{product.dimensions}</span>
+                        <span>{product.color}</span>
+                      </div>
+                      <Availability product={product} />
+                      <div className="card-price">
+                        <div>
+                          {product.compareAtPrice && (
+                            <del>
+                              {formatMoney.format(
+                                cycle === "weekly"
+                                  ? product.compareAtPrice
+                                  : product.compareAtPrice * 4,
+                              )}
+                            </del>
+                          )}
+                          <strong>
+                            {formatMoney.format(productPrice(product, cycle))}
+                          </strong>
+                          <small>/{cycleLabel(cycle)}</small>
+                        </div>
+                        <span>{selected ? "Selected" : "Add to room"}</span>
+                      </div>
+                    </div>
+                  </button>
+                  <button className="details-link" onClick={() => openDetails(product)}>
+                    View details <span aria-hidden="true">↗</span>
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="catalog-next">
+            <div>
+              <span>Step {currentStepIndex + 1} of {steps.length}</span>
+              <p>
+                {activeStep === "accessory"
+                  ? `${setup.accessoryIds.length} add-ons selected`
+                  : `${visibleProducts.find(isSelected)?.name} selected`}
+              </p>
+            </div>
+            <button onClick={goToNextStep}>
+              {currentStepIndex === steps.length - 1 ? "Review setup" : "Continue"}
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
         </div>
 
-        <div className="preview-column">
+        <aside className="preview-panel">
           <div className="preview-sticky">
-            <WorkspaceScene desk={desk} chair={chair} accessories={accessories} />
-            <div className="preview-footer">
+            <WorkspaceScene setup={setup} cycle={cycle} total={total} />
+            <div className="preview-meta">
               <div>
-                <span>Your setup</span>
-                <p>{desk.name} · {chair.name} · {accessories.length} add-ons</p>
+                <span>Selected setup</span>
+                <strong>
+                  {activeBundle ? activeBundle.name : "Custom workspace"}
+                </strong>
+                <p>
+                  {selectedProducts.length} pieces · delivery from {deliveryDate}
+                </p>
               </div>
-              <div className="preview-total">
-                <span>Monthly</span>
-                <strong>{currency.format(total)}</strong>
+              <div className="preview-actions">
+                {discount > 0 && (
+                  <span>You save {formatMoney.format(discount)}</span>
+                )}
+                <button onClick={openReview}>Review & rent</button>
               </div>
             </div>
           </div>
-        </div>
+        </aside>
       </section>
 
-      <section className="promise">
-        <p className="kicker">The easy part</p>
-        <h2>
-          Designed by you.
-          <br />
-          <em>Delivered by us.</em>
-        </h2>
-        <div className="promise-grid">
+      <section className="trust-section">
+        <div className="trust-heading">
+          <p className="eyebrow">The Roomie standard</p>
+          <h2>Everything handled.<br />Nothing improvised.</h2>
+        </div>
+        <div className="trust-grid">
           <article>
             <span>01</span>
-            <h3>Curated quality</h3>
-            <p>Considered pieces from responsible makers, chosen to work beautifully together.</p>
+            <h3>Quality checked</h3>
+            <p>Every piece is inspected, cleaned, and photographed before it enters your room.</p>
           </article>
           <article>
             <span>02</span>
-            <h3>One simple price</h3>
-            <p>Your complete workspace, delivery, setup, and support in one monthly payment.</p>
+            <h3>Delivery & setup</h3>
+            <p>We deliver, assemble, cable-manage, and leave your workspace ready for Monday.</p>
           </article>
           <article>
             <span>03</span>
-            <h3>Flexible by design</h3>
-            <p>Swap a piece or refresh your setup whenever your work and space change.</p>
+            <h3>Swap as you grow</h3>
+            <p>Change individual pieces or expand the setup without restarting your rental.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>Flexible returns</h3>
+            <p>Schedule collection when plans change. No boxes or disassembly required.</p>
           </article>
         </div>
-      </section>
-
-      <section className="closing">
-        <p className="kicker">Ready when you are</p>
-        <h2>Your better workday starts here.</h2>
-        <button onClick={() => setIsReviewOpen(true)}>
-          Review your setup <span>→</span>
-        </button>
       </section>
 
       <footer>
@@ -457,71 +590,274 @@ export default function Home() {
           roomie<span>.</span>
         </a>
         <p>Workspaces that work for you.</p>
-        <span>© 2026 Roomie Studio</span>
+        <span>Demo experience · 2026</span>
       </footer>
 
-      {isReviewOpen && (
-        <div className="dialog-backdrop" role="presentation" onMouseDown={() => setIsReviewOpen(false)}>
-          <section
-            className="review-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="review-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="dialog-top">
+      <div className="mobile-rent-bar">
+        <div>
+          <span>{selectedProducts.length} pieces · {cycleLabel(cycle)}ly</span>
+          <strong>{formatMoney.format(total)}</strong>
+        </div>
+        <button onClick={openReview}>Review setup</button>
+      </div>
+
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+
+      <dialog
+        ref={detailsDialogRef}
+        className="sheet-dialog details-dialog"
+        onClose={() => setDetailProduct(null)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeDetails();
+        }}
+      >
+        {detailProduct && (
+          <div className="dialog-shell">
+            <header className="dialog-header">
               <div>
-                <p className="kicker">Almost yours</p>
-                <h2 id="review-title">Your workspace</h2>
+                <span>Product details</span>
+                <strong>{detailProduct.name}</strong>
               </div>
-              <button className="close-button" onClick={() => setIsReviewOpen(false)} aria-label="Close review">
+              <button onClick={closeDetails} aria-label="Close product details">
                 ×
               </button>
-            </div>
-
-            {isConfirmed ? (
-              <div className="success-state">
-                <span>✓</span>
-                <h3>You have excellent taste.</h3>
-                <p>Your workspace request is ready. We&apos;ll be in touch to arrange delivery and setup.</p>
-                <button onClick={() => setIsReviewOpen(false)}>Back to your room</button>
+            </header>
+            <div className="detail-layout">
+              <div className="detail-photo">
+                <ProductPhoto product={detailProduct} sizes="(max-width: 720px) 90vw, 45vw" />
+                <span>{detailProduct.condition} condition</span>
               </div>
-            ) : (
-              <>
-                <div className="review-list">
-                  {selectedProducts.map((product) => (
-                    <article key={product.id}>
-                      <div className="review-icon">
-                        <ProductIcon product={product} />
-                      </div>
-                      <div>
-                        <small>{product.category}</small>
-                        <h3>{product.name}</h3>
-                      </div>
-                      <strong>{currency.format(product.price)}</strong>
-                      {product.category === "accessory" && (
-                        <button onClick={() => toggleProduct(product)} aria-label={`Remove ${product.name}`}>
-                          ×
-                        </button>
-                      )}
-                    </article>
-                  ))}
-                </div>
-                <div className="dialog-total">
+              <div className="detail-content">
+                <p className="eyebrow">{detailProduct.brand} · {detailProduct.model}</p>
+                <h2>{detailProduct.name}</h2>
+                <p className="detail-description">{detailProduct.description}</p>
+                <Availability product={detailProduct} />
+                <div className="detail-spec-grid">
                   <div>
-                    <span>Monthly total</span>
-                    <small>Delivery and setup included</small>
+                    <span>Dimensions</span>
+                    <strong>{detailProduct.dimensions}</strong>
                   </div>
-                  <strong>{currency.format(total)}</strong>
+                  <div>
+                    <span>Finish</span>
+                    <strong>{detailProduct.color}</strong>
+                  </div>
+                  <div>
+                    <span>Condition</span>
+                    <strong>{detailProduct.condition}</strong>
+                  </div>
+                  <div>
+                    <span>Delivery</span>
+                    <strong>Next day</strong>
+                  </div>
                 </div>
-                <button className="confirm-button" onClick={() => setIsConfirmed(true)}>
-                  Rent this setup <span>→</span>
+                <div className="feature-columns">
+                  <div>
+                    <h3>Under the hood</h3>
+                    <ul>
+                      {detailProduct.features.map((feature) => (
+                        <li key={feature}>{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3>What&apos;s included</h3>
+                    <ul>
+                      {detailProduct.included.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <div className="detail-cta">
+                  <div>
+                    <strong>{formatMoney.format(productPrice(detailProduct, cycle))}</strong>
+                    <span>/{cycleLabel(cycle)}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      selectProduct(detailProduct);
+                      closeDetails();
+                    }}
+                  >
+                    {isSelected(detailProduct) ? "Remove from setup" : "Add to setup"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </dialog>
+
+      <dialog
+        ref={reviewDialogRef}
+        className="sheet-dialog review-dialog"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeReview();
+        }}
+      >
+        <div className="dialog-shell">
+          <header className="dialog-header">
+            <div>
+              <span>{isConfirmed ? "Request received" : "Review your room"}</span>
+              <strong>{isConfirmed ? "You’re ready to work." : `${selectedProducts.length} pieces · ${location}`}</strong>
+            </div>
+            <button onClick={closeReview} aria-label="Close review">
+              ×
+            </button>
+          </header>
+
+          {isConfirmed ? (
+            <div className="success-state">
+              <span aria-hidden="true">✓</span>
+              <p className="eyebrow">Demo request confirmed</p>
+              <h2>Your workspace is taking shape.</h2>
+              <p>
+                We&apos;ve reserved these demo items for {deliveryDate}. In a live
+                version, this request would now be written to Firestore and sent to
+                the operations team.
+              </p>
+              <div className="success-reference">
+                <span>Reference</span>
+                <strong>ROOM-{deliveryDate.replaceAll("-", "")}-24</strong>
+              </div>
+              <button onClick={closeReview}>Back to your workspace</button>
+            </div>
+          ) : (
+            <form className="review-layout" onSubmit={submitRental}>
+              <div className="review-items">
+                <p className="eyebrow">Your equipment</p>
+                {selectedProducts.map((product) => (
+                  <article key={product.id}>
+                    <div className="review-product-photo">
+                      <ProductPhoto product={product} sizes="72px" />
+                    </div>
+                    <div>
+                      <span>{product.brand} · {product.category}</span>
+                      <strong>{product.name}</strong>
+                      <small>{product.condition} · {product.color}</small>
+                    </div>
+                    <b>{formatMoney.format(productPrice(product, cycle))}</b>
+                    {product.category === "accessory" && (
+                      <button
+                        type="button"
+                        onClick={() => selectProduct(product)}
+                        aria-label={`Remove ${product.name}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </article>
+                ))}
+                <button
+                  type="button"
+                  className="edit-setup"
+                  onClick={() => {
+                    closeReview();
+                    document.getElementById("customize")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  + Edit your setup
                 </button>
-              </>
-            )}
-          </section>
+              </div>
+
+              <div className="checkout-panel">
+                <p className="eyebrow">Delivery details</p>
+                <div className="checkout-fields">
+                  <label>
+                    <span>Location</span>
+                    <select value={location} onChange={(event) => setLocation(event.target.value)}>
+                      <option>Bali</option>
+                      <option>Jakarta</option>
+                      <option>Surabaya</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Delivery date</span>
+                    <input
+                      type="date"
+                      min="2026-07-31"
+                      value={deliveryDate}
+                      onChange={(event) => setDeliveryDate(event.target.value)}
+                    />
+                  </label>
+                  <label className="address-field">
+                    <span>Delivery address</span>
+                    <textarea
+                      required
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
+                      placeholder="Villa, hotel, office, or coworking address"
+                    />
+                  </label>
+                </div>
+
+                <fieldset className="delivery-options">
+                  <legend>Delivery service</legend>
+                  <label className={deliveryType === "regular" ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="delivery"
+                      checked={deliveryType === "regular"}
+                      onChange={() => setDeliveryType("regular")}
+                    />
+                    <span>
+                      <strong>Roomie Setup</strong>
+                      <small>Next day · delivery and assembly included</small>
+                    </span>
+                    <b>Free</b>
+                  </label>
+                  <label className={deliveryType === "priority" ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="delivery"
+                      checked={deliveryType === "priority"}
+                      onChange={() => setDeliveryType("priority")}
+                    />
+                    <span>
+                      <strong>Priority Setup</strong>
+                      <small>Choose a 2-hour window · live tracking</small>
+                    </span>
+                    <b>$5</b>
+                  </label>
+                </fieldset>
+
+                <div className="order-summary">
+                  <div>
+                    <span>Equipment subtotal</span>
+                    <b>{formatMoney.format(subtotal)}</b>
+                  </div>
+                  {discount > 0 && (
+                    <div className="saving-line">
+                      <span>{activeBundle?.name} saving</span>
+                      <b>-{formatMoney.format(discount)}</b>
+                    </div>
+                  )}
+                  <div>
+                    <span>Delivery & assembly</span>
+                    <b>{deliveryFee ? formatMoney.format(deliveryFee) : "Included"}</b>
+                  </div>
+                  <div className="total-line">
+                    <span>
+                      Due today
+                      <small>Then {formatMoney.format(total)}/{cycleLabel(cycle)}</small>
+                    </span>
+                    <b>{formatMoney.format(orderTotal)}</b>
+                  </div>
+                </div>
+
+                <button className="confirm-rental" type="submit">
+                  Confirm demo rental <span aria-hidden="true">→</span>
+                </button>
+                <p className="demo-note">
+                  Demo only — no payment is collected and no external request is sent.
+                </p>
+              </div>
+            </form>
+          )}
         </div>
-      )}
+      </dialog>
     </main>
   );
 }
