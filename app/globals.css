@@ -27,7 +27,10 @@
   --color-ink-soft: #38403e;
   --color-paper: #f6f4ed;
   --color-paper-deep: #e9e5db;
-  --color-white: #fffefa;
+  /* Named for its role, not its value: this is the raised-surface colour for
+     cards and sheets. Calling it `white` would shadow Tailwind's own `white`,
+     and the design uses both — pure white for text on ink, #fffefa for cards. */
+  --color-shell: #fffefa;
   --color-line: rgba(31, 37, 36, 0.15);
   --color-line-strong: rgba(31, 37, 36, 0.28);
   --color-accent: #c54220;
@@ -41,6 +44,31 @@
 
   --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mona: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+/**
+ * Registered as a utility rather than a plain class so that spacing utilities
+ * on the element win over it. The five call sites each want a different bottom
+ * margin, which previously needed a descendant selector per parent.
+ */
+@utility eyebrow {
+  font-family: var(--font-mona);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.14em;
+  margin: 0 0 20px;
+  text-transform: uppercase;
+
+  &::before {
+    background: var(--color-accent);
+    content: "";
+    display: inline-block;
+    height: 8px;
+    margin-right: 10px;
+    transform: rotate(45deg);
+    width: 8px;
+  }
 }
 
 :root {
@@ -50,7 +78,7 @@
   --ink-soft: var(--color-ink-soft);
   --paper: var(--color-paper);
   --paper-deep: var(--color-paper-deep);
-  --white: var(--color-white);
+  --white: var(--color-shell);
   --line: var(--color-line);
   --line-strong: var(--color-line-strong);
   --accent: var(--color-accent);
@@ -66,41 +94,48 @@
   --header-height: 76px;
 }
 
-* {
-  box-sizing: border-box;
-}
+/**
+ * Element defaults live in @layer base so that utilities beat them. Left
+ * unlayered, `font: inherit` on button/input would silently win over
+ * text-xs/font-bold on every control we migrate.
+ */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-html {
-  scroll-behavior: smooth;
-}
+  html {
+    scroll-behavior: smooth;
+  }
 
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--helvetica);
-  margin: 0;
-}
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--helvetica);
+    margin: 0;
+  }
 
-button,
-input,
-select,
-textarea {
-  color: inherit;
-  font: inherit;
-}
+  button,
+  input,
+  select,
+  textarea {
+    color: inherit;
+    font: inherit;
+  }
 
-button,
-select {
-  cursor: pointer;
-}
+  button,
+  select {
+    cursor: pointer;
+  }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid #2a6fac;
-  outline-offset: 3px;
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid #2a6fac;
+    outline-offset: 3px;
+  }
 }
 
 .app-header {
@@ -422,91 +457,6 @@ textarea:focus-visible {
   width: 32px;
 }
 
-.intro {
-  align-items: end;
-  display: flex;
-  justify-content: space-between;
-  min-height: 470px;
-  padding: 80px 5.5vw 76px;
-}
-
-.eyebrow {
-  font-family: var(--mona);
-  font-size: 11px;
-  font-weight: 760;
-  letter-spacing: 0.14em;
-  margin: 0 0 20px;
-  text-transform: uppercase;
-}
-
-.eyebrow::before {
-  background: var(--accent);
-  content: "";
-  display: inline-block;
-  height: 8px;
-  margin-right: 10px;
-  transform: rotate(45deg);
-  width: 8px;
-}
-
-.intro h1 {
-  font-family: var(--mona);
-  font-size: clamp(55px, 6.2vw, 98px);
-  font-weight: 650;
-  letter-spacing: -0.072em;
-  line-height: 0.88;
-  margin: 0;
-}
-
-.intro h1 em {
-  color: var(--accent);
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-}
-
-.intro-side {
-  max-width: 430px;
-}
-
-.intro-side > p {
-  font-size: 15px;
-  line-height: 1.6;
-  margin: 0 0 28px;
-  opacity: 0.68;
-}
-
-.cycle-switch {
-  background: var(--paper-deep);
-  border-radius: 999px;
-  display: inline-flex;
-  padding: 5px;
-}
-
-.cycle-switch button {
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  font-family: var(--mona);
-  font-size: 12px;
-  font-weight: 700;
-  min-height: 42px;
-  padding: 0 17px;
-}
-
-.cycle-switch button.active {
-  background: var(--ink);
-  color: white;
-}
-
-.cycle-switch button span {
-  background: var(--lime);
-  border-radius: 999px;
-  color: var(--ink);
-  font-size: 9px;
-  margin-left: 6px;
-  padding: 3px 6px;
-}
-
 .bundle-section {
   border-top: 1px solid var(--line);
   padding: 62px 5.5vw 76px;
@@ -519,13 +469,8 @@ textarea:focus-visible {
   margin-bottom: 35px;
 }
 
-.section-intro .eyebrow {
-  margin-bottom: 12px;
-}
-
 .section-intro h2,
-.catalog-heading h2,
-.trust-heading h2 {
+.catalog-heading h2 {
   font-family: var(--mona);
   font-size: clamp(34px, 3.4vw, 50px);
   font-weight: 650;
@@ -642,10 +587,6 @@ textarea:focus-visible {
   align-items: end;
   display: flex;
   justify-content: space-between;
-}
-
-.catalog-heading .eyebrow {
-  margin-bottom: 11px;
 }
 
 .catalog-heading > span {
@@ -1274,77 +1215,6 @@ textarea:focus-visible {
   padding: 0 16px;
 }
 
-.trust-section {
-  background: var(--ink);
-  color: white;
-  padding: 110px 5.5vw 100px;
-}
-
-.trust-heading {
-  align-items: end;
-  display: flex;
-  justify-content: space-between;
-}
-
-.trust-heading h2 {
-  font-size: clamp(48px, 5.5vw, 80px);
-}
-
-.trust-grid {
-  border-top: 1px solid rgba(255, 255, 255, 0.17);
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin-top: 75px;
-}
-
-.trust-grid article {
-  border-right: 1px solid rgba(255, 255, 255, 0.17);
-  min-height: 235px;
-  padding: 27px 25px 0 0;
-}
-
-.trust-grid article + article {
-  padding-left: 25px;
-}
-
-.trust-grid article:last-child {
-  border-right: 0;
-}
-
-.trust-grid article > span {
-  color: var(--lime);
-  font-family: var(--mona);
-  font-size: 10px;
-}
-
-.trust-grid h3 {
-  font-family: var(--mona);
-  font-size: 17px;
-  letter-spacing: -0.025em;
-  margin: 83px 0 11px;
-}
-
-.trust-grid p {
-  font-size: 12px;
-  line-height: 1.6;
-  margin: 0;
-  opacity: 0.52;
-}
-
-footer {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  min-height: 120px;
-  padding: 0 5.5vw;
-}
-
-footer p,
-footer > span {
-  font-size: 11px;
-  opacity: 0.5;
-}
-
 .mobile-rent-bar {
   display: none;
 }
@@ -1451,10 +1321,6 @@ footer > span {
 
 .detail-content {
   padding: 55px 45px 40px;
-}
-
-.detail-content .eyebrow {
-  margin-bottom: 12px;
 }
 
 .detail-content h2 {
@@ -1587,11 +1453,6 @@ footer > span {
 .review-items {
   border-right: 1px solid var(--line);
   padding: 40px 35px;
-}
-
-.review-items > .eyebrow,
-.checkout-panel > .eyebrow {
-  margin-bottom: 20px;
 }
 
 .review-items article {
@@ -1866,10 +1727,6 @@ footer > span {
   width: 78px;
 }
 
-.success-state .eyebrow {
-  margin: 27px 0 15px;
-}
-
 .success-state h2 {
   font-family: var(--mona);
   font-size: clamp(43px, 6vw, 76px);
@@ -1930,18 +1787,6 @@ footer > span {
   .product-grid {
     grid-template-columns: 1fr;
   }
-
-  .trust-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .trust-grid article:nth-child(2) {
-    border-right: 0;
-  }
-
-  .trust-grid article:nth-child(-n + 2) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.17);
-  }
 }
 
 @media (max-width: 900px) {
@@ -1973,22 +1818,6 @@ footer > span {
 
   .header-review {
     padding: 6px;
-  }
-
-  .intro {
-    align-items: start;
-    flex-direction: column;
-    gap: 36px;
-    min-height: 0;
-    padding: 55px 20px 48px;
-  }
-
-  .intro h1 {
-    font-size: clamp(44px, 13.4vw, 62px);
-  }
-
-  .intro-side {
-    max-width: 500px;
   }
 
   .bundle-section {
@@ -2123,54 +1952,6 @@ footer > span {
     display: none;
   }
 
-  .trust-section {
-    padding: 80px 20px 60px;
-  }
-
-  .trust-heading {
-    align-items: start;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .trust-heading h2 {
-    font-size: clamp(34px, 9vw, 48px);
-  }
-
-  .trust-grid {
-    grid-template-columns: 1fr;
-    margin-top: 50px;
-  }
-
-  .trust-grid article,
-  .trust-grid article + article {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.17);
-    border-right: 0;
-    min-height: 0;
-    padding: 27px 0 30px;
-  }
-
-  .trust-grid article:last-child {
-    border-bottom: 0;
-  }
-
-  .trust-grid h3 {
-    margin-top: 33px;
-  }
-
-  footer {
-    align-items: start;
-    flex-direction: column;
-    gap: 10px;
-    justify-content: center;
-    min-height: 170px;
-    padding: 0 20px;
-  }
-
-  footer p {
-    margin: 0;
-  }
-
   .mobile-rent-bar {
     align-items: center;
     background: rgba(31, 37, 36, 0.96);
@@ -2273,16 +2054,6 @@ footer > span {
 }
 
 @media (max-width: 480px) {
-  .cycle-switch {
-    display: flex;
-    width: 100%;
-  }
-
-  .cycle-switch button {
-    flex: 1;
-    padding: 0 10px;
-  }
-
   .step-nav button b {
     font-size: 10px;
   }
@@ -2306,15 +2077,6 @@ footer > span {
 }
 
 @media (max-width: 360px) {
-  .intro h1 {
-    font-size: 41px;
-  }
-
-  .intro {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
   .catalog-panel {
     padding-left: 16px;
     padding-right: 16px;

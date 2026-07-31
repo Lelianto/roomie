@@ -190,7 +190,7 @@ export default function Home() {
       <section className="bundle-section" aria-labelledby="bundles-title">
         <div className="section-intro">
           <div>
-            <p className="eyebrow">Curated bundles</p>
+            <p className="eyebrow mb-3">Curated bundles</p>
             <h2 id="bundles-title">Start complete. Make it yours.</h2>
           </div>
           <p>Load a proven setup in one tap, then replace or remove anything.</p>
@@ -211,7 +211,7 @@ export default function Home() {
         <div className="catalog-panel">
           <div className="catalog-heading">
             <div>
-              <p className="eyebrow">Customize</p>
+              <p className="eyebrow mb-[11px]">Customize</p>
               <h2 id="customize-title">Shape every detail.</h2>
             </div>
             <span>Demo inventory · {location}</span>

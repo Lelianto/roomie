@@ -88,7 +88,7 @@ export function ReviewDialog({
         {isConfirmed ? (
           <div className="success-state">
             <span aria-hidden="true">✓</span>
-            <p className="eyebrow">Demo request confirmed</p>
+            <p className="eyebrow mt-[27px] mb-[15px]">Demo request confirmed</p>
             <h2>Your workspace is taking shape.</h2>
             <p>
               We&apos;ve reserved these demo items for {deliveryDate}. In a live
@@ -106,7 +106,7 @@ export function ReviewDialog({
         ) : (
           <form className="review-layout" noValidate onSubmit={onSubmit}>
             <div className="review-items">
-              <p className="eyebrow">Your equipment</p>
+              <p className="eyebrow mb-5">Your equipment</p>
               {products.map((product) => (
                 <article key={product.id}>
                   <div className="review-product-photo">
@@ -139,7 +139,7 @@ export function ReviewDialog({
             </div>
 
             <div className="checkout-panel">
-              <p className="eyebrow">Delivery details</p>
+              <p className="eyebrow mb-5">Delivery details</p>
               <div className="checkout-fields">
                 <SelectField
                   label="Location"

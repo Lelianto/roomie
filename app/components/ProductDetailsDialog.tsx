@@ -51,7 +51,7 @@ export function ProductDetailsDialog({
               <span>{product.condition} condition</span>
             </div>
             <div className="detail-content">
-              <p className="eyebrow">
+              <p className="eyebrow mb-3">
                 {product.brand} · {product.model}
               </p>
               <h2>{product.name}</h2>

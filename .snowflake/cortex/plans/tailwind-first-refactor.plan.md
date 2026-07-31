@@ -1,3 +1,9 @@
+---
+name: "tailwind-first-refactor"
+created: "2026-07-31T15:30:17.113Z"
+status: pending
+---
+
 # Tailwind-First Refactor + Perbaikan Kualitas Kode
 
 Hasil audit: proyek ini secara fungsional sehat, tapi ada **6 bug nyata**, **logika bisnis tercampur di komponen**, **page.tsx 952 baris**, dan **test yang meng-assert source code pakai regex**. Sesuai pilihan Anda, style akan digeser ke Tailwind dan CSS custom diminimalkan.
@@ -7,9 +13,10 @@ Hasil audit: proyek ini secara fungsional sehat, tapi ada **6 bug nyata**, **log
 Migrasi CSS ke Tailwind di proyek ini **bukan pekerjaan kecil**: 2341 baris, 106 class, 257 blok selector, 5 media query. Ini bukan `globals.css` boilerplate — ini design system yang ditulis tangan (typography `clamp()`, padding `vw`, `backdrop-filter`, `mask-mode: luminance`, state `:popover-open`).
 
 Konsekuensi yang perlu Anda terima:
+
 - **Risiko regresi visual nyata.** Mitigasinya: migrasi per komponen, dan setiap komponen diverifikasi screenshot di 4 breakpoint (1180 / 900 / 480 / 360) sebelum blok CSS-nya dihapus.
 - **Sebagian markup akan lebih ramai.** `text-[clamp(48px,5.5vw,80px)]` kalah baca dibanding `font-size: clamp(...)`. Karena itu **task 4 (pecah komponen) wajib dulu** — menempel 30 utility ke file 952 baris akan jadi tidak terbaca.
-- **~30 baris tidak akan dipaksa ke utility.** Layer scene, mask, dan keyframes tetap authored CSS. Memaksanya jadi arbitrary value hanya menambah kerumitan tanpa manfaat.
+- **\~30 baris tidak akan dipaksa ke utility.** Layer scene, mask, dan keyframes tetap authored CSS. Memaksanya jadi arbitrary value hanya menambah kerumitan tanpa manfaat.
 - **Tahap 5, 6, 7 bisa dihentikan di mana saja** tanpa meninggalkan proyek dalam keadaan rusak. Tiap tahap berakhir dengan build hijau.
 
 ---
@@ -18,14 +25,14 @@ Konsekuensi yang perlu Anda terima:
 
 Semua ini independen dari styling, jadi dikerjakan lebih dulu.
 
-| # | Lokasi | Masalah | Perbaikan |
-|---|--------|---------|-----------|
-| 1 | `app/ui.tsx:309-315` | `node.showPopover()` dipanggil lagi saat alert kedua masuk (dep effect `alerts.length` berubah 1→2) padahal popover sudah terbuka. Per spec ini melempar `InvalidStateError`. | Guard `if (!node.matches(":popover-open"))` sebelum `showPopover()`, simetris dengan guard hide yang sudah ada. |
-| 2 | `app/ui.tsx:288-295` | `notify` menjadwalkan `setTimeout` tanpa pernah dibersihkan. Timer tetap hidup setelah unmount dan memanggil `setState`. | Simpan id timer di `useRef`, `clearTimeout` semuanya di cleanup effect. |
-| 3 | `app/page.tsx:91-98` | `Availability` hardcode `"{stock} available in Bali"`, padahal `location` bisa dipilih Jakarta/Surabaya. Header di baris 496 menampilkan `Demo inventory · Jakarta` sementara tiap kartu bilang "available in Bali". Inkonsistensi yang terlihat user. | Terima `location` sebagai prop dan pakai nilai terpilih. |
-| 4 | `lib/catalog.ts:340-343` | `initialSetup` memakai `bundles[1]` — magic index yang senyap salah kalau urutan array berubah. | Cari lewat id: `bundles.find((b) => b.id === "creator")`, gagal keras bila tidak ada. |
-| 5 | `app/page.tsx:70-89, 718, 823` | `<img sizes="160px">` tanpa `srcSet` sama sekali tidak berefek — atribut mati yang menyiratkan optimasi responsif yang tidak ada. | Hapus `sizes`, ganti `width`/`height` intrinsik agar browser bisa reserve ruang dan CLS turun. |
-| 6 | `app/ui.tsx:113-130` | `role="listbox"` berisi `<li>` biasa, `role="option"` ada di `<button>` di dalamnya. Ownership listbox→option putus, jadi screen reader tidak mengumumkan "1 dari 3". Navigasi keyboard juga tidak memindahkan fokus DOM tanpa `aria-activedescendant`. | Pindahkan `role="option"` + `id` ke elemen anak langsung listbox, tambahkan `aria-activedescendant` di trigger combobox. |
+| # | Lokasi                         | Masalah                                                                                                                                                                                                                                                 | Perbaikan                                                                                                                |
+| - | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1 | `app/ui.tsx:309-315`           | `node.showPopover()` dipanggil lagi saat alert kedua masuk (dep effect `alerts.length` berubah 1→2) padahal popover sudah terbuka. Per spec ini melempar `InvalidStateError`.                                                                           | Guard `if (!node.matches(":popover-open"))` sebelum `showPopover()`, simetris dengan guard hide yang sudah ada.          |
+| 2 | `app/ui.tsx:288-295`           | `notify` menjadwalkan `setTimeout` tanpa pernah dibersihkan. Timer tetap hidup setelah unmount dan memanggil `setState`.                                                                                                                                | Simpan id timer di `useRef`, `clearTimeout` semuanya di cleanup effect.                                                  |
+| 3 | `app/page.tsx:91-98`           | `Availability` hardcode `"{stock} available in Bali"`, padahal `location` bisa dipilih Jakarta/Surabaya. Header di baris 496 menampilkan `Demo inventory · Jakarta` sementara tiap kartu bilang "available in Bali". Inkonsistensi yang terlihat user.  | Terima `location` sebagai prop dan pakai nilai terpilih.                                                                 |
+| 4 | `lib/catalog.ts:340-343`       | `initialSetup` memakai `bundles[1]` — magic index yang senyap salah kalau urutan array berubah.                                                                                                                                                         | Cari lewat id: `bundles.find((b) => b.id === "creator")`, gagal keras bila tidak ada.                                    |
+| 5 | `app/page.tsx:70-89, 718, 823` | `<img sizes="160px">` tanpa `srcSet` sama sekali tidak berefek — atribut mati yang menyiratkan optimasi responsif yang tidak ada.                                                                                                                       | Hapus `sizes`, ganti `width`/`height` intrinsik agar browser bisa reserve ruang dan CLS turun.                           |
+| 6 | `app/ui.tsx:113-130`           | `role="listbox"` berisi `<li>` biasa, `role="option"` ada di `<button>` di dalamnya. Ownership listbox→option putus, jadi screen reader tidak mengumumkan "1 dari 3". Navigasi keyboard juga tidak memindahkan fokus DOM tanpa `aria-activedescendant`. | Pindahkan `role="option"` + `id` ke elemen anak langsung listbox, tambahkan `aria-activedescendant` di trigger combobox. |
 
 ## Task 2 — Fondasi Tailwind
 
