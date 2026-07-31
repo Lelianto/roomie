@@ -1,270 +1,48 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import {
   bundles,
-  getProduct,
-  getSceneChairMatte,
-  getSceneRender,
   getSetupProducts,
-  hasCompletePicturedKit,
-  initialSetup,
-  picturedAccessoryIds,
   products,
   resolveBundleId,
-  resolveScenePlacements,
-  splitByChairMask,
   type Bundle,
   type Category,
   type Product,
   type RentalCycle,
-  type WorkspaceSetup,
 } from "@/lib/catalog";
 import {
   deliveryFeeFor,
-  productPrice,
   setupPrice,
   subtotalOf,
   type DeliveryType,
 } from "@/lib/pricing";
 import { cycleLabel, formatMoney } from "@/lib/format";
 import { todayKey } from "@/lib/date";
-import { AlertStack, DateField, SelectField, useAlerts } from "./ui";
-import { LOCATIONS, STORAGE_KEY } from "@/lib/constants";
-
-const steps: { id: Category; label: string; shortLabel: string }[] = [
-  { id: "desk", label: "Choose desk", shortLabel: "Desk" },
-  { id: "chair", label: "Choose chair", shortLabel: "Chair" },
-  { id: "accessory", label: "Add your tools", shortLabel: "Add-ons" },
-];
-
-const picturedAccessoryIdSet = new Set<string>(picturedAccessoryIds);
-
-function isWorkspaceSetup(value: unknown): value is WorkspaceSetup {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<WorkspaceSetup>;
-  const ids = new Set(products.map((product) => product.id));
-  return (
-    typeof candidate.deskId === "string" &&
-    typeof candidate.chairId === "string" &&
-    ids.has(candidate.deskId) &&
-    ids.has(candidate.chairId) &&
-    Array.isArray(candidate.accessoryIds) &&
-    candidate.accessoryIds.every((id) => typeof id === "string" && ids.has(id)) &&
-    (candidate.bundleId === null || typeof candidate.bundleId === "string")
-  );
-}
-
-function ProductPhoto({
-  product,
-  priority = false,
-}: {
-  product: Product;
-  priority?: boolean;
-}) {
-  return (
-    <img
-      src={product.image}
-      alt={product.name}
-      width={1200}
-      height={1200}
-      className="product-photo"
-      loading={priority ? "eager" : "lazy"}
-      fetchPriority={priority ? "high" : "auto"}
-    />
-  );
-}
-
-function Availability({ product, location }: { product: Product; location: string }) {
-  return (
-    <span className="availability">
-      <i aria-hidden="true" />
-      {product.stock} available in {location}
-    </span>
-  );
-}
-
-function WorkspaceScene({
-  setup,
-  cycle,
-  total,
-  sceneId,
-}: {
-  setup: WorkspaceSetup;
-  cycle: RentalCycle;
-  total: number;
-  sceneId: string;
-}) {
-  const selected = getSetupProducts(setup);
-  const desk = getProduct(setup.deskId);
-  const chair = getProduct(setup.chairId);
-  const accessories = selected.filter((product) => product.category === "accessory");
-  const sceneImage = getSceneRender(setup);
-  const completePicturedKit = hasCompletePicturedKit(setup);
-  const livePlacements = completePicturedKit
-    ? accessories.filter((product) => !picturedAccessoryIdSet.has(product.id))
-    : accessories;
-  const placements = resolveScenePlacements(livePlacements, setup.deskId);
-  const chairMatte = getSceneChairMatte(setup);
-
-  const { behindChair, aheadOfChair } = splitByChairMask(placements);
-
-  if (!desk || !chair) return null;
-
-  return (
-    <figure
-      className={`real-scene scene-desk-${setup.deskId}`}
-      aria-labelledby={sceneId}
-    >
-      <div className="scene-room">
-        <img
-          key={sceneImage}
-          src={sceneImage}
-          alt=""
-          width={1440}
-          height={960}
-          className="scene-composite"
-          loading="eager"
-          fetchPriority="high"
-        />
-
-        {behindChair.length > 0 ? (
-          <div className="scene-accessory-stage scene-stage-back" aria-label="Back accessories placed in the live setup">
-            {behindChair.map((placement) => (
-              <img
-                key={placement.id}
-                src={placement.overlay}
-                alt=""
-                className="scene-accessory"
-                loading="eager"
-                style={{
-                  height: `${placement.height}%`,
-                  left: `${placement.left}%`,
-                  top: `${placement.top}%`,
-                  width: `${placement.width}%`,
-                  zIndex: placement.zIndex,
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-
-        {chairMatte && behindChair.length > 0 ? (
-          <img
-            key={`${sceneImage}-mask`}
-            src={sceneImage}
-            alt=""
-            className="scene-chair-mask"
-            loading="eager"
-            style={{ maskImage: `url(${chairMatte})`, WebkitMaskImage: `url(${chairMatte})` }}
-          />
-        ) : null}
-
-        {aheadOfChair.length > 0 ? (
-          <div className="scene-accessory-stage scene-stage-front" aria-label="Front accessories placed in the live setup">
-            {aheadOfChair.map((placement) => (
-              <img
-                key={placement.id}
-                src={placement.overlay}
-                alt=""
-                className="scene-accessory"
-                loading="eager"
-                style={{
-                  height: `${placement.height}%`,
-                  left: `${placement.left}%`,
-                  top: `${placement.top}%`,
-                  width: `${placement.width}%`,
-                  zIndex: placement.zIndex,
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-
-        <div className="scene-status">
-          <span>
-            <i aria-hidden="true" />
-            Live setup
-          </span>
-          <strong id={sceneId}>{selected.length} pieces in your room</strong>
-        </div>
-
-        <div className="scene-price">
-          <span>Rental total</span>
-          <strong>
-            {formatMoney(total)}
-            <small>/{cycleLabel(cycle)}</small>
-          </strong>
-        </div>
-      </div>
-      <div className="scene-selection-strip">
-        <span>In this setup</span>
-        <strong>{desk.name}</strong>
-        <strong>{chair.name}</strong>
-        <div className="scene-accessory-list">
-          {accessories.length > 0 ? (
-            accessories.map((product) => (
-              <small key={product.id}>
-                <i aria-hidden="true">✓</i>
-                {product.name}
-              </small>
-            ))
-          ) : (
-            <small>No add-ons selected</small>
-          )}
-        </div>
-      </div>
-      <figcaption className="sr-only">
-        Workspace preview showing {desk.name}, {chair.name}, and{" "}
-        {accessories.map((item) => item.name).join(", ") || "no accessories"}.
-      </figcaption>
-    </figure>
-  );
-}
-
-function BundleCard({
-  bundle,
-  active,
-  onSelect,
-}: {
-  bundle: Bundle;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      className={`bundle-card ${active ? "active" : ""}`}
-      onClick={onSelect}
-      aria-pressed={active}
-    >
-      <span className="bundle-label">{bundle.label}</span>
-      <strong>{bundle.name}</strong>
-      <p>{bundle.description}</p>
-      <span className="bundle-saving">Save {Math.round(bundle.discount * 100)}%</span>
-      <i aria-hidden="true">{active ? "✓" : "→"}</i>
-    </button>
-  );
-}
+import { LOCATIONS } from "@/lib/constants";
+import { AlertStack, useAlerts } from "./components/ui/AlertStack";
+import { DateField } from "./components/ui/DateField";
+import { SelectField } from "./components/ui/SelectField";
+import { usePersistentSetup } from "./hooks/usePersistentSetup";
+import { BundleCard } from "./components/BundleCard";
+import { ProductCard } from "./components/ProductCard";
+import { ProductDetailsDialog } from "./components/ProductDetailsDialog";
+import { ReviewDialog } from "./components/ReviewDialog";
+import { IntroSection, SiteFooter } from "./components/SiteChrome";
+import { StepNav, steps } from "./components/StepNav";
+import { TrustSection } from "./components/TrustSection";
+import { WorkspaceScene } from "./components/WorkspaceScene";
 
 export default function Home() {
+  const { setup, setSetup } = usePersistentSetup();
   const [activeStep, setActiveStep] = useState<Category>("desk");
-  const [setup, setSetup] = useState<WorkspaceSetup>(initialSetup);
   const [cycle, setCycle] = useState<RentalCycle>("weekly");
-  const [location, setLocation] = useState("Bali");
+  const [location, setLocation] = useState(LOCATIONS[0] ?? "Bali");
   const [minDeliveryDate] = useState(todayKey);
   const [deliveryDate, setDeliveryDate] = useState(todayKey);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("regular");
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const [isRestored, setIsRestored] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState("");
@@ -272,28 +50,6 @@ export default function Home() {
   const { alerts, notify, dismiss } = useAlerts();
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
   const reviewDialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const restore = window.setTimeout(() => {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed: unknown = JSON.parse(saved);
-          if (isWorkspaceSetup(parsed)) setSetup(parsed);
-        } catch {
-          window.localStorage.removeItem(STORAGE_KEY);
-        }
-      }
-      setIsRestored(true);
-    }, 0);
-    return () => window.clearTimeout(restore);
-  }, []);
-
-  useEffect(() => {
-    if (isRestored) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
-    }
-  }, [isRestored, setup]);
 
   const visibleProducts = products.filter(
     (product) => product.category === activeStep,
@@ -306,6 +62,7 @@ export default function Home() {
   const deliveryFee = deliveryFeeFor(deliveryType);
   const orderTotal = total + deliveryFee;
   const currentStepIndex = steps.findIndex((step) => step.id === activeStep);
+  const currentStep = steps[currentStepIndex] ?? steps[0];
 
   function isSelected(product: Product) {
     if (product.category === "desk") return setup.deskId === product.id;
@@ -345,41 +102,44 @@ export default function Home() {
     setAnnouncement(`${bundle.name} bundle loaded. You can customize every item.`);
   }
 
+  function scrollToCustomize() {
+    document
+      .getElementById("customize")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function goToNextStep() {
     const next = steps[currentStepIndex + 1];
-    if (next) {
-      setActiveStep(next.id);
-      document
-        .getElementById("customize")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
+    if (!next) {
       openReview();
+      return;
     }
+    setActiveStep(next.id);
+    scrollToCustomize();
   }
 
   function openDetails(product: Product) {
     setDetailProduct(product);
-    window.requestAnimationFrame(() => detailsDialogRef.current?.showModal());
-  }
-
-  function closeDetails() {
-    detailsDialogRef.current?.close();
+    // Opened straight away rather than inside requestAnimationFrame: the dialog
+    // element already exists, and rAF never fires in a throttled or background
+    // tab, which left the dialog permanently closed.
+    detailsDialogRef.current?.showModal();
   }
 
   function openReview() {
     setIsConfirmed(false);
-    window.requestAnimationFrame(() => reviewDialogRef.current?.showModal());
-  }
-
-  function closeReview() {
-    reviewDialogRef.current?.close();
+    reviewDialogRef.current?.showModal();
   }
 
   function submitRental(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!address.trim()) {
       setAddressError("We need an address to plan the delivery.");
-      notify("error", "Delivery address is missing", "Add where we should set the room up.");
+      notify(
+        "error",
+        "Delivery address is missing",
+        "Add where we should set the room up.",
+      );
       return;
     }
     setAddressError("");
@@ -390,7 +150,11 @@ export default function Home() {
         .toUpperCase()}`,
     );
     setIsConfirmed(true);
-    notify("success", "Demo request confirmed", `We reserved your setup for ${deliveryDate}.`);
+    notify(
+      "success",
+      "Demo request confirmed",
+      `We reserved your setup for ${deliveryDate}.`,
+    );
   }
 
   return (
@@ -415,44 +179,13 @@ export default function Home() {
           />
         </div>
 
-        <button className="header-review" onClick={openReview}>
+        <button type="button" className="header-review" onClick={openReview}>
           <span>Review setup</span>
           <b>{selectedProducts.length}</b>
         </button>
       </header>
 
-      <section className="intro">
-        <div>
-          <p className="eyebrow">Workspace rental, made personal</p>
-          <h1>
-            Build your room.
-            <br />
-            <em>See it come alive.</em>
-          </h1>
-        </div>
-        <div className="intro-side">
-          <p>
-            Select real equipment, preview the complete setup, and have it delivered
-            and assembled at your door.
-          </p>
-          <div className="cycle-switch" aria-label="Rental period">
-            <button
-              className={cycle === "weekly" ? "active" : ""}
-              onClick={() => setCycle("weekly")}
-              aria-pressed={cycle === "weekly"}
-            >
-              Weekly
-            </button>
-            <button
-              className={cycle === "monthly" ? "active" : ""}
-              onClick={() => setCycle("monthly")}
-              aria-pressed={cycle === "monthly"}
-            >
-              Monthly <span>Save 25%</span>
-            </button>
-          </div>
-        </div>
-      </section>
+      <IntroSection cycle={cycle} onCycleChange={setCycle} />
 
       <section className="bundle-section" aria-labelledby="bundles-title">
         <div className="section-intro">
@@ -460,17 +193,15 @@ export default function Home() {
             <p className="eyebrow">Curated bundles</p>
             <h2 id="bundles-title">Start complete. Make it yours.</h2>
           </div>
-          <p>
-            Load a proven setup in one tap, then replace or remove anything.
-          </p>
+          <p>Load a proven setup in one tap, then replace or remove anything.</p>
         </div>
         <div className="bundle-row">
           {bundles.map((bundle) => (
             <BundleCard
+              key={bundle.id}
               bundle={bundle}
               active={setup.bundleId === bundle.id}
               onSelect={() => selectBundle(bundle)}
-              key={bundle.id}
             />
           ))}
         </div>
@@ -495,111 +226,44 @@ export default function Home() {
             />
           </div>
 
-          <nav className="step-nav" aria-label="Workspace configuration steps">
-            {steps.map((step, index) => {
-              const complete =
-                step.id === "desk" ||
-                step.id === "chair" ||
-                (step.id === "accessory" && setup.accessoryIds.length > 0);
-              return (
-                <button
-                  key={step.id}
-                  className={activeStep === step.id ? "active" : ""}
-                  onClick={() => setActiveStep(step.id)}
-                  aria-current={activeStep === step.id ? "step" : undefined}
-                >
-                  <span>{complete ? "✓" : `0${index + 1}`}</span>
-                  <b>{step.shortLabel}</b>
-                </button>
-              );
-            })}
-          </nav>
+          <StepNav
+            activeStep={activeStep}
+            accessoryCount={setup.accessoryIds.length}
+            onSelect={setActiveStep}
+          />
 
           <div
             className="product-grid"
             role={activeStep === "accessory" ? "group" : "radiogroup"}
-            aria-label={steps[currentStepIndex].label}
+            aria-label={currentStep.label}
           >
-            {visibleProducts.map((product, index) => {
-              const selected = isSelected(product);
-              return (
-                <article className={`real-product-card ${selected ? "selected" : ""}`} key={product.id}>
-                  <button
-                    className="product-select"
-                    onClick={() => selectProduct(product)}
-                    role={activeStep === "accessory" ? "checkbox" : "radio"}
-                    aria-checked={selected}
-                    aria-label={`${selected ? "Selected" : "Select"} ${product.name}`}
-                  >
-                    <div className="photo-wrap">
-                      <ProductPhoto product={product} priority={index < 2} />
-                      <span className="scene-match-badge">
-                        <i aria-hidden="true" />
-                        Scene matched
-                      </span>
-                      <div className="card-badges">
-                        {product.compareAtPrice && (
-                          <span className="discount-badge">
-                            -
-                            {Math.round(
-                              (1 - product.weeklyPrice / product.compareAtPrice) * 100,
-                            )}
-                            %
-                          </span>
-                        )}
-                        {product.badge && <span>{product.badge}</span>}
-                      </div>
-                      <span className="select-control">{selected ? "✓" : "+"}</span>
-                    </div>
-                    <div className="card-content">
-                      <span className="brand-model">
-                        {product.brand} · {product.model}
-                      </span>
-                      <h3>{product.name}</h3>
-                      <p>{product.description}</p>
-                      <div className="card-facts">
-                        <span>{product.dimensions}</span>
-                        <span>{product.color}</span>
-                      </div>
-                      <Availability product={product} location={location} />
-                      <div className="card-price">
-                        <div>
-                          {product.compareAtPrice && (
-                            <del>
-                              {formatMoney(
-                                cycle === "weekly"
-                                  ? product.compareAtPrice
-                                  : product.compareAtPrice * 4,
-                              )}
-                            </del>
-                          )}
-                          <strong>
-                            {formatMoney(productPrice(product, cycle))}
-                          </strong>
-                          <small>/{cycleLabel(cycle)}</small>
-                        </div>
-                        <span>{selected ? "Selected" : "Add to room"}</span>
-                      </div>
-                    </div>
-                  </button>
-                  <button className="details-link" onClick={() => openDetails(product)}>
-                    View details <span aria-hidden="true">↗</span>
-                  </button>
-                </article>
-              );
-            })}
+            {visibleProducts.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                cycle={cycle}
+                location={location}
+                selected={isSelected(product)}
+                multiSelect={activeStep === "accessory"}
+                priority={index < 2}
+                onSelect={() => selectProduct(product)}
+                onOpenDetails={() => openDetails(product)}
+              />
+            ))}
           </div>
 
           <div className="catalog-next">
             <div>
-              <span>Step {currentStepIndex + 1} of {steps.length}</span>
+              <span>
+                Step {currentStepIndex + 1} of {steps.length}
+              </span>
               <p>
                 {activeStep === "accessory"
                   ? `${setup.accessoryIds.length} add-ons selected`
-                  : `${visibleProducts.find(isSelected)?.name} selected`}
+                  : `${visibleProducts.find(isSelected)?.name ?? "None"} selected`}
               </p>
             </div>
-            <button onClick={goToNextStep}>
+            <button type="button" onClick={goToNextStep}>
               {currentStepIndex === steps.length - 1 ? "Review setup" : "Continue"}
               <span aria-hidden="true">→</span>
             </button>
@@ -617,325 +281,90 @@ export default function Home() {
             <div className="preview-meta">
               <div>
                 <span>Selected setup</span>
-                <strong>
-                  {activeBundle ? activeBundle.name : "Custom workspace"}
-                </strong>
+                <strong>{activeBundle ? activeBundle.name : "Custom workspace"}</strong>
                 <p>
                   {selectedProducts.length} pieces · delivery from {deliveryDate}
                 </p>
               </div>
               <div className="preview-actions">
-                {discount > 0 && (
-                  <span>You save {formatMoney(discount)}</span>
-                )}
-                <button onClick={openReview}>Review & rent</button>
+                {discount > 0 && <span>You save {formatMoney(discount)}</span>}
+                <button type="button" onClick={openReview}>
+                  Review &amp; rent
+                </button>
               </div>
             </div>
           </div>
         </aside>
       </section>
 
-      <section className="trust-section">
-        <div className="trust-heading">
-          <p className="eyebrow">The Roomie standard</p>
-          <h2>Everything handled.<br />Nothing improvised.</h2>
-        </div>
-        <div className="trust-grid">
-          <article>
-            <span>01</span>
-            <h3>Quality checked</h3>
-            <p>Every piece is inspected, cleaned, and photographed before it enters your room.</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h3>Delivery & setup</h3>
-            <p>We deliver, assemble, cable-manage, and leave your workspace ready for Monday.</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h3>Swap as you grow</h3>
-            <p>Change individual pieces or expand the setup without restarting your rental.</p>
-          </article>
-          <article>
-            <span>04</span>
-            <h3>Flexible returns</h3>
-            <p>Schedule collection when plans change. No boxes or disassembly required.</p>
-          </article>
-        </div>
-      </section>
+      <TrustSection />
 
-      <footer>
-        <a className="brand" href="#">
-          roomie<span>.</span>
-        </a>
-        <p>Workspaces that work for you.</p>
-        <span>Demo experience · 2026</span>
-      </footer>
+      <SiteFooter />
 
       <div className="mobile-rent-bar">
         <div>
-          <span>{selectedProducts.length} pieces · {cycleLabel(cycle)}ly</span>
+          <span>
+            {selectedProducts.length} pieces · {cycleLabel(cycle)}ly
+          </span>
           <strong>{formatMoney(total)}</strong>
         </div>
-        <button onClick={openReview}>Review setup</button>
+        <button type="button" onClick={openReview}>
+          Review setup
+        </button>
       </div>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
       </p>
 
-      <dialog
-        ref={detailsDialogRef}
-        className="sheet-dialog details-dialog"
+      <ProductDetailsDialog
+        dialogRef={detailsDialogRef}
+        product={detailProduct}
+        cycle={cycle}
+        location={location}
+        selected={detailProduct ? isSelected(detailProduct) : false}
         onClose={() => setDetailProduct(null)}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) closeDetails();
+        onDismiss={() => detailsDialogRef.current?.close()}
+        onToggle={() => {
+          if (detailProduct) selectProduct(detailProduct);
+          detailsDialogRef.current?.close();
         }}
-      >
-        {detailProduct && (
-          <div className="dialog-shell">
-            <header className="dialog-header">
-              <div>
-                <span>Product details</span>
-                <strong>{detailProduct.name}</strong>
-              </div>
-              <button onClick={closeDetails} aria-label="Close product details">
-                ×
-              </button>
-            </header>
-            <div className="detail-layout">
-              <div className="detail-photo">
-                <ProductPhoto product={detailProduct} />
-                <span>{detailProduct.condition} condition</span>
-              </div>
-              <div className="detail-content">
-                <p className="eyebrow">{detailProduct.brand} · {detailProduct.model}</p>
-                <h2>{detailProduct.name}</h2>
-                <p className="detail-description">{detailProduct.description}</p>
-                <Availability product={detailProduct} location={location} />
-                <div className="detail-spec-grid">
-                  <div>
-                    <span>Dimensions</span>
-                    <strong>{detailProduct.dimensions}</strong>
-                  </div>
-                  <div>
-                    <span>Finish</span>
-                    <strong>{detailProduct.color}</strong>
-                  </div>
-                  <div>
-                    <span>Condition</span>
-                    <strong>{detailProduct.condition}</strong>
-                  </div>
-                  <div>
-                    <span>Delivery</span>
-                    <strong>Next day</strong>
-                  </div>
-                </div>
-                <div className="feature-columns">
-                  <div>
-                    <h3>Under the hood</h3>
-                    <ul>
-                      {detailProduct.features.map((feature) => (
-                        <li key={feature}>{feature}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3>What&apos;s included</h3>
-                    <ul>
-                      {detailProduct.included.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div className="detail-cta">
-                  <div>
-                    <strong>{formatMoney(productPrice(detailProduct, cycle))}</strong>
-                    <span>/{cycleLabel(cycle)}</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      selectProduct(detailProduct);
-                      closeDetails();
-                    }}
-                  >
-                    {isSelected(detailProduct) ? "Remove from setup" : "Add to setup"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </dialog>
+      />
 
-      <dialog
-        ref={reviewDialogRef}
-        className="sheet-dialog review-dialog"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) closeReview();
+      <ReviewDialog
+        dialogRef={reviewDialogRef}
+        products={selectedProducts}
+        cycle={cycle}
+        activeBundle={activeBundle}
+        subtotal={subtotal}
+        discount={discount}
+        total={total}
+        deliveryFee={deliveryFee}
+        orderTotal={orderTotal}
+        location={location}
+        onLocationChange={setLocation}
+        deliveryDate={deliveryDate}
+        minDeliveryDate={minDeliveryDate}
+        onDeliveryDateChange={setDeliveryDate}
+        deliveryType={deliveryType}
+        onDeliveryTypeChange={setDeliveryType}
+        address={address}
+        addressError={addressError}
+        onAddressChange={(value) => {
+          setAddress(value);
+          if (addressError) setAddressError("");
         }}
-      >
-        <div className="dialog-shell">
-          <header className="dialog-header">
-            <div>
-              <span>{isConfirmed ? "Request received" : "Review your room"}</span>
-              <strong>{isConfirmed ? "You’re ready to work." : `${selectedProducts.length} pieces · ${location}`}</strong>
-            </div>
-            <button onClick={closeReview} aria-label="Close review">
-              ×
-            </button>
-          </header>
+        isConfirmed={isConfirmed}
+        reference={reference}
+        onSubmit={submitRental}
+        onRemoveProduct={selectProduct}
+        onEditSetup={() => {
+          reviewDialogRef.current?.close();
+          scrollToCustomize();
+        }}
+        onDismiss={() => reviewDialogRef.current?.close()}
+      />
 
-          {isConfirmed ? (
-            <div className="success-state">
-              <span aria-hidden="true">✓</span>
-              <p className="eyebrow">Demo request confirmed</p>
-              <h2>Your workspace is taking shape.</h2>
-              <p>
-                We&apos;ve reserved these demo items for {deliveryDate}. In a live
-                version, this request would now be sent to the operations team to
-                schedule delivery and assembly.
-              </p>
-              <div className="success-reference">
-                <span>Reference</span>
-                <strong>{reference}</strong>
-              </div>
-              <button onClick={closeReview}>Back to your workspace</button>
-            </div>
-          ) : (
-            <form className="review-layout" noValidate onSubmit={submitRental}>
-              <div className="review-items">
-                <p className="eyebrow">Your equipment</p>
-                {selectedProducts.map((product) => (
-                  <article key={product.id}>
-                    <div className="review-product-photo">
-                      <ProductPhoto product={product} />
-                    </div>
-                    <div>
-                      <span>{product.brand} · {product.category}</span>
-                      <strong>{product.name}</strong>
-                      <small>{product.condition} · {product.color}</small>
-                    </div>
-                    <b>{formatMoney(productPrice(product, cycle))}</b>
-                    {product.category === "accessory" && (
-                      <button
-                        type="button"
-                        onClick={() => selectProduct(product)}
-                        aria-label={`Remove ${product.name}`}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </article>
-                ))}
-                <button
-                  type="button"
-                  className="edit-setup"
-                  onClick={() => {
-                    closeReview();
-                    document.getElementById("customize")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                >
-                  + Edit your setup
-                </button>
-              </div>
-
-              <div className="checkout-panel">
-                <p className="eyebrow">Delivery details</p>
-                <div className="checkout-fields">
-                  <SelectField
-                    label="Location"
-                    value={location}
-                    options={LOCATIONS}
-                    onChange={setLocation}
-                  />
-                  <DateField
-                    label="Delivery date"
-                    value={deliveryDate}
-                    min={minDeliveryDate}
-                    onChange={setDeliveryDate}
-                  />
-                  <label className="address-field">
-                    <span>Delivery address</span>
-                    <textarea
-                      value={address}
-                      aria-invalid={addressError ? true : undefined}
-                      onChange={(event) => {
-                        setAddress(event.target.value);
-                        if (addressError) setAddressError("");
-                      }}
-                      placeholder="Villa, hotel, office, or coworking address"
-                    />
-                    {addressError && <em className="field-error">{addressError}</em>}
-                  </label>
-                </div>
-
-                <fieldset className="delivery-options">
-                  <legend>Delivery service</legend>
-                  <label className={deliveryType === "regular" ? "selected" : ""}>
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={deliveryType === "regular"}
-                      onChange={() => setDeliveryType("regular")}
-                    />
-                    <span>
-                      <strong>Roomie Setup</strong>
-                      <small>Next day · delivery and assembly included</small>
-                    </span>
-                    <b>Free</b>
-                  </label>
-                  <label className={deliveryType === "priority" ? "selected" : ""}>
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={deliveryType === "priority"}
-                      onChange={() => setDeliveryType("priority")}
-                    />
-                    <span>
-                      <strong>Priority Setup</strong>
-                      <small>Choose a 2-hour window · live tracking</small>
-                    </span>
-                    <b>$5</b>
-                  </label>
-                </fieldset>
-
-                <div className="order-summary">
-                  <div>
-                    <span>Equipment subtotal</span>
-                    <b>{formatMoney(subtotal)}</b>
-                  </div>
-                  {discount > 0 && (
-                    <div className="saving-line">
-                      <span>{activeBundle?.name} saving</span>
-                      <b>-{formatMoney(discount)}</b>
-                    </div>
-                  )}
-                  <div>
-                    <span>Delivery & assembly</span>
-                    <b>{deliveryFee ? formatMoney(deliveryFee) : "Included"}</b>
-                  </div>
-                  <div className="total-line">
-                    <span>
-                      Due today
-                      <small>Then {formatMoney(total)}/{cycleLabel(cycle)}</small>
-                    </span>
-                    <b>{formatMoney(orderTotal)}</b>
-                  </div>
-                </div>
-
-                <button className="confirm-rental" type="submit">
-                  Confirm demo rental <span aria-hidden="true">→</span>
-                </button>
-                <p className="demo-note">
-                  Demo only — no payment is collected and no external request is sent.
-                </p>
-              </div>
-            </form>
-          )}
-        </div>
-      </dialog>
       <AlertStack alerts={alerts} onDismiss={dismiss} />
     </main>
   );
