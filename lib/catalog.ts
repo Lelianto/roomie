@@ -346,6 +346,19 @@ export function getProduct(id: string) {
   return products.find((product) => product.id === id);
 }
 
+// A bundle discount only applies while the setup still is that bundle. Returns
+// the matching bundle id, or null once the visitor has changed anything.
+export function resolveBundleId(setup: Omit<WorkspaceSetup, "bundleId">) {
+  const match = bundles.find(
+    (bundle) =>
+      bundle.setup.deskId === setup.deskId &&
+      bundle.setup.chairId === setup.chairId &&
+      bundle.setup.accessoryIds.length === setup.accessoryIds.length &&
+      bundle.setup.accessoryIds.every((id) => setup.accessoryIds.includes(id)),
+  );
+  return match?.id ?? null;
+}
+
 export function getSetupProducts(setup: WorkspaceSetup) {
   return products.filter(
     (product) =>

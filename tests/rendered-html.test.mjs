@@ -38,6 +38,9 @@ test("ships typed catalog data and local persistence", async () => {
   assert.match(catalog, /export function getSceneRender/);
   assert.match(catalog, /-equipped/);
   assert.match(catalog, /inventory|stock:/i);
+  assert.match(catalog, /export function resolveBundleId/);
+  assert.match(page, /bundleId: resolveBundleId\(next\)/);
+  assert.doesNotMatch(page, /Firestore/);
   assert.match(page, /window\.localStorage/);
   assert.match(page, /showModal/);
   assert.match(page, /scene-accessory-stage/);

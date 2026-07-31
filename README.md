@@ -63,6 +63,13 @@ a lock-in: `selectBundle()` loads the setup and returns the visitor to step one
 of customization. The app opens with The Creator preloaded, so the first paint is
 already a full, believable room rather than an empty desk.
 
+The bundle price, however, is not a coupon. `resolveBundleId()` re-evaluates the
+setup on every change: the discount survives only while the selection *is* that
+bundle, and the label falls back to "Custom workspace" the moment an item is
+added, removed, or swapped. Rebuilding the exact bundle re-attaches it. Without
+this rule a visitor could load the 20%-off Founder bundle, strip it to a single
+desk, and keep the discount.
+
 **4. Customize in three steps.** Desk → Chair → Add-ons. Desk and chair are
 single-choice (`role="radio"`), add-ons are multi-choice (`role="checkbox"`).
 This mirrors the physical constraint — one desk, one chair, any number of tools —
@@ -85,9 +92,9 @@ grow", "flexible returns") sits directly above, pre-empting the four objections
 specific to renting.
 
 **7. Confirm.** Submitting validates the address, then swaps the dialog for a
-success state with a reference number derived from the delivery date. This is a
-demo: nothing is persisted server-side and no payment is taken. The success copy
-says so explicitly rather than faking a transaction.
+success state with a per-confirmation reference (`ROOM-<delivery date>-<code>`).
+This is a demo: nothing is persisted server-side and no payment is taken. The
+success copy says so explicitly rather than faking a transaction.
 
 ### Pricing model
 
@@ -96,7 +103,7 @@ says so explicitly rather than faking a transaction.
 | Weekly price | `product.weeklyPrice` |
 | Monthly price | `weeklyPrice × 4 × 0.75` (25% off) |
 | Setup subtotal | sum of every selected product |
-| Bundle discount | `subtotal × (1 - bundle.discount)`, only while a bundle is active |
+| Bundle discount | `subtotal × (1 - bundle.discount)`, only while the setup still matches the bundle exactly |
 | Delivery | free, or $5 for Priority |
 | Due today | discounted setup total + delivery fee |
 
@@ -422,6 +429,8 @@ as soon as the visitor types.
 - `bundles` — 3 curated setups, each with a fractional `discount` applied to the
   setup total
 - `productPrice()` / `setupPrice()` — all pricing, including bundle discounts
+- `resolveBundleId()` — re-derives the active bundle from the current selection,
+  so a discount cannot outlive the setup that earned it
 - `getSceneRender()` / `getSceneChairMatte()` / `hasCompletePicturedKit()` /
   `resolveScenePlacements()` — scene resolution
 - `WorkspaceSetup` — `deskId`, `chairId`, `accessoryIds`, `bundleId`; validated

@@ -20,6 +20,7 @@ import {
   picturedAccessoryIds,
   productPrice,
   products,
+  resolveBundleId,
   resolveScenePlacements,
   setupPrice,
   type Bundle,
@@ -274,6 +275,7 @@ export default function Home() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState("");
+  const [reference, setReference] = useState("");
   const { alerts, notify, dismiss } = useAlerts();
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
   const reviewDialogRef = useRef<HTMLDialogElement>(null);
@@ -325,18 +327,19 @@ export default function Home() {
     const selected = isSelected(product);
     setIsConfirmed(false);
     setSetup((current) => {
-      if (product.category === "desk") {
-        return { ...current, deskId: product.id };
-      }
-      if (product.category === "chair") {
-        return { ...current, chairId: product.id };
-      }
-      return {
-        ...current,
-        accessoryIds: selected
-          ? current.accessoryIds.filter((id) => id !== product.id)
-          : [...current.accessoryIds, product.id],
-      };
+      const next =
+        product.category === "desk"
+          ? { ...current, deskId: product.id }
+          : product.category === "chair"
+            ? { ...current, chairId: product.id }
+            : {
+                ...current,
+                accessoryIds: selected
+                  ? current.accessoryIds.filter((id) => id !== product.id)
+                  : [...current.accessoryIds, product.id],
+              };
+      // The bundle price only survives while the setup still is that bundle.
+      return { ...next, bundleId: resolveBundleId(next) };
     });
     setAnnouncement(
       product.category === "accessory"
@@ -390,6 +393,12 @@ export default function Home() {
       return;
     }
     setAddressError("");
+    setReference(
+      `ROOM-${deliveryDate.replaceAll("-", "")}-${Math.random()
+        .toString(36)
+        .slice(2, 6)
+        .toUpperCase()}`,
+    );
     setIsConfirmed(true);
     notify("success", "Demo request confirmed", `We reserved your setup for ${deliveryDate}.`);
   }
@@ -795,12 +804,12 @@ export default function Home() {
               <h2>Your workspace is taking shape.</h2>
               <p>
                 We&apos;ve reserved these demo items for {deliveryDate}. In a live
-                version, this request would now be written to Firestore and sent to
-                the operations team.
+                version, this request would now be sent to the operations team to
+                schedule delivery and assembly.
               </p>
               <div className="success-reference">
                 <span>Reference</span>
-                <strong>ROOM-{deliveryDate.replaceAll("-", "")}-24</strong>
+                <strong>{reference}</strong>
               </div>
               <button onClick={closeReview}>Back to your workspace</button>
             </div>
