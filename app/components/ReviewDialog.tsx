@@ -6,6 +6,7 @@ import { LOCATIONS } from "@/lib/constants";
 import { DateField } from "./ui/DateField";
 import { SelectField } from "./ui/SelectField";
 import { ProductPhoto } from "./ProductPhoto";
+import { SheetDialog, SheetHeader } from "./ui/SheetDialog";
 
 export type ReviewDialogProps = {
   dialogRef: RefObject<HTMLDialogElement | null>;
@@ -63,27 +64,18 @@ export function ReviewDialog({
   onDismiss,
 }: ReviewDialogProps) {
   return (
-    <dialog
-      ref={dialogRef}
-      className="sheet-dialog review-dialog"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onDismiss();
-      }}
-    >
-      <div className="dialog-shell">
-        <header className="dialog-header">
-          <div>
-            <span>{isConfirmed ? "Request received" : "Review your room"}</span>
-            <strong>
-              {isConfirmed
-                ? "You’re ready to work."
-                : `${products.length} pieces · ${location}`}
-            </strong>
-          </div>
-          <button type="button" onClick={onDismiss} aria-label="Close review">
-            ×
-          </button>
-        </header>
+    <SheetDialog dialogRef={dialogRef} onDismiss={onDismiss}>
+      <>
+        <SheetHeader
+          label={isConfirmed ? "Request received" : "Review your room"}
+          title={
+            isConfirmed
+              ? "You’re ready to work."
+              : `${products.length} pieces · ${location}`
+          }
+          closeLabel="Close review"
+          onDismiss={onDismiss}
+        />
 
         {isConfirmed ? (
           <div className="success-state">
@@ -230,7 +222,7 @@ export function ReviewDialog({
             </div>
           </form>
         )}
-      </div>
-    </dialog>
+      </>
+    </SheetDialog>
   );
 }
