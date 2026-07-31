@@ -138,41 +138,6 @@
   }
 }
 
-.app-header {
-  align-items: center;
-  backdrop-filter: blur(18px);
-  background: rgba(246, 244, 237, 0.92);
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  height: var(--header-height);
-  padding: 0 3.25vw;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
-.brand {
-  font-family: var(--mona);
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.07em;
-  line-height: 1;
-  text-decoration: none;
-}
-
-.brand span {
-  color: var(--accent);
-}
-
-.rental-context {
-  align-items: stretch;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  display: flex;
-  min-width: 410px;
-}
-
 .rental-context .field {
   min-width: 0;
   padding: 7px 17px 6px;
@@ -430,46 +395,6 @@
   padding: 0;
 }
 
-.header-review {
-  align-items: center;
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  color: white;
-  display: flex;
-  font-family: var(--mona);
-  font-size: 12px;
-  font-weight: 700;
-  gap: 15px;
-  justify-self: end;
-  min-height: 46px;
-  padding: 7px 8px 7px 20px;
-}
-
-.header-review b {
-  align-items: center;
-  background: var(--lime);
-  border-radius: 50%;
-  color: var(--ink);
-  display: flex;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
-}
-
-.bundle-section {
-  border-top: 1px solid var(--line);
-  padding: 62px 5.5vw 76px;
-}
-
-.section-intro {
-  align-items: end;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 35px;
-}
-
-.section-intro h2,
 .catalog-heading h2 {
   font-family: var(--mona);
   font-size: clamp(34px, 3.4vw, 50px);
@@ -477,92 +402,6 @@
   letter-spacing: -0.055em;
   line-height: 0.98;
   margin: 0;
-}
-
-.section-intro > p {
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
-  max-width: 320px;
-  opacity: 0.6;
-}
-
-.bundle-row {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.bundle-card {
-  background: var(--white);
-  border: 1px solid var(--line);
-  min-height: 245px;
-  padding: 25px;
-  position: relative;
-  text-align: left;
-  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
-}
-
-.bundle-card:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-3px);
-}
-
-.bundle-card.active {
-  background: var(--ink);
-  color: white;
-}
-
-.bundle-label {
-  display: block;
-  font-family: var(--mona);
-  font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.11em;
-  margin-bottom: 48px;
-  opacity: 0.54;
-  text-transform: uppercase;
-}
-
-.bundle-card > strong {
-  display: block;
-  font-family: var(--mona);
-  font-size: 25px;
-  letter-spacing: -0.04em;
-}
-
-.bundle-card p {
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 8px 0 19px;
-  max-width: 310px;
-  opacity: 0.58;
-}
-
-.bundle-saving {
-  background: var(--lime);
-  border-radius: 999px;
-  color: var(--ink);
-  display: inline-block;
-  font-family: var(--mona);
-  font-size: 10px;
-  font-weight: 750;
-  padding: 6px 9px;
-}
-
-.bundle-card > i {
-  align-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  bottom: 22px;
-  display: flex;
-  font-style: normal;
-  height: 38px;
-  justify-content: center;
-  opacity: 0.65;
-  position: absolute;
-  right: 22px;
-  width: 38px;
 }
 
 .configurator {
@@ -1796,53 +1635,6 @@
 
   body {
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-
-  .app-header {
-    grid-template-columns: 1fr auto;
-    padding: 0 18px;
-  }
-
-  .rental-context {
-    bottom: auto;
-    display: none;
-  }
-
-  .header-review {
-    min-height: 44px;
-  }
-
-  .header-review > span {
-    display: none;
-  }
-
-  .header-review {
-    padding: 6px;
-  }
-
-  .bundle-section {
-    padding: 48px 20px 55px;
-  }
-
-  .section-intro {
-    align-items: start;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .bundle-row {
-    display: flex;
-    gap: 10px;
-    margin: 0 -20px;
-    overflow-x: auto;
-    padding: 0 20px 8px;
-    scroll-snap-type: x mandatory;
-  }
-
-  .bundle-card {
-    flex: 0 0 min(82vw, 335px);
-    min-height: 225px;
-    scroll-snap-align: start;
   }
 
   .configurator {

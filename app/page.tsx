@@ -21,14 +21,12 @@ import { cycleLabel, formatMoney } from "@/lib/format";
 import { todayKey } from "@/lib/date";
 import { LOCATIONS } from "@/lib/constants";
 import { AlertStack, useAlerts } from "./components/ui/AlertStack";
-import { DateField } from "./components/ui/DateField";
-import { SelectField } from "./components/ui/SelectField";
 import { usePersistentSetup } from "./hooks/usePersistentSetup";
 import { BundleCard } from "./components/BundleCard";
 import { ProductCard } from "./components/ProductCard";
 import { ProductDetailsDialog } from "./components/ProductDetailsDialog";
 import { ReviewDialog } from "./components/ReviewDialog";
-import { IntroSection, SiteFooter } from "./components/SiteChrome";
+import { IntroSection, SiteFooter, SiteHeader } from "./components/SiteChrome";
 import { StepNav, steps } from "./components/StepNav";
 import { TrustSection } from "./components/TrustSection";
 import { WorkspaceScene } from "./components/WorkspaceScene";
@@ -159,43 +157,37 @@ export default function Home() {
 
   return (
     <main>
-      <header className="app-header">
-        <a className="brand" href="#" aria-label="Roomie home">
-          roomie<span>.</span>
-        </a>
-
-        <div className="rental-context">
-          <SelectField
-            label="Location"
-            value={location}
-            options={LOCATIONS}
-            onChange={setLocation}
-          />
-          <DateField
-            label="Delivery"
-            value={deliveryDate}
-            min={minDeliveryDate}
-            onChange={setDeliveryDate}
-          />
-        </div>
-
-        <button type="button" className="header-review" onClick={openReview}>
-          <span>Review setup</span>
-          <b>{selectedProducts.length}</b>
-        </button>
-      </header>
+      <SiteHeader
+        location={location}
+        onLocationChange={setLocation}
+        deliveryDate={deliveryDate}
+        minDeliveryDate={minDeliveryDate}
+        onDeliveryDateChange={setDeliveryDate}
+        selectedCount={selectedProducts.length}
+        onReview={openReview}
+      />
 
       <IntroSection cycle={cycle} onCycleChange={setCycle} />
 
-      <section className="bundle-section" aria-labelledby="bundles-title">
-        <div className="section-intro">
+      <section
+        className="border-t border-line px-[5.5vw] pt-[62px] pb-[76px] max-lap:px-5 max-lap:pt-12 max-lap:pb-[55px]"
+        aria-labelledby="bundles-title"
+      >
+        <div className="mb-[35px] flex items-end justify-between max-lap:flex-col max-lap:items-start max-lap:gap-[18px]">
           <div>
             <p className="eyebrow mb-3">Curated bundles</p>
-            <h2 id="bundles-title">Start complete. Make it yours.</h2>
+            <h2
+              id="bundles-title"
+              className="m-0 font-mona text-[clamp(34px,3.4vw,50px)] leading-[0.98] font-[650] tracking-[-0.055em]"
+            >
+              Start complete. Make it yours.
+            </h2>
           </div>
-          <p>Load a proven setup in one tap, then replace or remove anything.</p>
+          <p className="m-0 max-w-[320px] text-[13px] leading-[1.5] opacity-60">
+            Load a proven setup in one tap, then replace or remove anything.
+          </p>
         </div>
-        <div className="bundle-row">
+        <div className="grid grid-cols-3 gap-3 max-lap:-mx-5 max-lap:flex max-lap:snap-x max-lap:snap-mandatory max-lap:gap-2.5 max-lap:overflow-x-auto max-lap:px-5 max-lap:pb-2">
           {bundles.map((bundle) => (
             <BundleCard
               key={bundle.id}
