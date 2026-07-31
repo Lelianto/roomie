@@ -4,7 +4,7 @@ import {
   type Product,
   type RentalCycle,
   type WorkspaceSetup,
-} from "./catalog";
+} from "./catalog.ts";
 
 /** A monthly rental is billed as four weeks, discounted for the commitment. */
 export const MONTHLY_WEEKS = 4;

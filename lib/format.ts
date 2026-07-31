@@ -1,4 +1,4 @@
-import type { RentalCycle } from "./catalog";
+import type { RentalCycle } from "./catalog.ts";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",

@@ -294,16 +294,26 @@ there is no database, no API route and no server state — and it forced a
 non-standard build. Removing it made the project deploy on Vercel with zero
 configuration and eliminated the type errors that came with the Workers globals.
 
-### 11. Tests assert on build output and assets, not components
+### 11. Unit tests over pure logic, build-output assertions over the rest
 
-**Decision:** `npm test` runs `next build`, then asserts against the prerendered
-HTML, the catalog's structural contracts, and the exact contents of the asset
-directories.
+**Decision:** two layers. `npm run test:unit` covers `lib/` directly — pricing,
+bundle matching, scene placement, and date keys — and needs no build. `npm run
+test:smoke` then asserts against the prerendered HTML and the exact contents of
+the asset directories.
 
-**Rejected:** a component test suite. The failure modes that actually hurt this
-app are *a missing render file* (the scene silently goes blank) and *a native
-control creeping back in*. A DOM-level component test would catch neither; a
-filesystem and build-output assertion catches both.
+**Rejected:** asserting on source text. An earlier version of this suite matched
+regexes against `app/page.tsx` to check that logic existed. That proved nothing
+about behaviour and broke the moment the file was split into components, so it
+was replaced with tests that call the functions.
+
+**Rejected:** a DOM component suite. The split above is drawn where the risk is.
+Money and layering are pure functions, so they are cheap to test directly and
+the tests read as a specification — that a lapsed bundle costs *more*, that the
+delivery fee is charged once and not scaled by the cycle, that nothing behind
+the chair paints in front of it. The remaining failure modes are *a missing
+render file* (the scene silently goes blank) and *a native control creeping
+back in*, and a filesystem plus build-output assertion catches both. A DOM
+component test would sit between the two and catch neither.
 
 ---
 
@@ -450,10 +460,18 @@ npm run dev          # http://localhost:3000
 | `npm run dev` | Next.js dev server (Turbopack) |
 | `npm run build` | Production build; prerenders `/` |
 | `npm start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint (`next/core-web-vitals` + TypeScript) |
-| `npm test` | Build, then assert on output and assets |
+| `npm run test:unit` | Pure-logic tests; no build, runs in well under a second |
+| `npm run test:smoke` | Assert on the build output and assets |
+| `npm test` | The full gate: typecheck, lint, unit, build, smoke |
 
-Requires Node.js `>= 22.13`.
+Requires Node.js `>= 22.18` (pinned in `.nvmrc`). The floor is 22.18 rather than
+22.13 because the unit tests import `lib/*.ts` directly, which relies on type
+stripping being on by default. That is also why the relative imports inside
+`lib/` name their `.ts` extension: Node will not resolve an extensionless
+specifier, and adding a transpiler purely to avoid three characters would have
+been the worse trade.
 
 ## Deployment
 
@@ -473,8 +491,8 @@ runtime binding to configure.
 | UI | React 19 |
 | Styling | Authored CSS + Tailwind CSS 4 via PostCSS |
 | Language | TypeScript 5.9 (`strict`) |
-| Tests | `node --test` against the production build |
-| Runtime | Node.js >= 22.13 |
+| Tests | `node --test`: unit tests over `lib/`, plus build-output assertions |
+| Runtime | Node.js >= 22.18 |
 
 ---
 
@@ -502,16 +520,40 @@ tests/
 
 ## Testing
 
-`npm test` builds first, then asserts on real output:
+`npm test` runs the whole gate in cost order: typecheck, lint, unit tests, then
+the build and the assertions that need it.
+
+**`npm run test:unit`** — 40 tests over `lib/`, no build required:
+
+1. `pricing` — weekly versus monthly rates, that a month costs more in total but
+   less per week, bundle discounts, that a lapsed or unknown bundle id charges
+   full price, and that the priority delivery fee is added once rather than
+   scaled by the billing cycle;
+2. `bundle` — `resolveBundleId` matching regardless of accessory order, lapsing
+   when a piece is added, removed, or swapped, returning when the piece is put
+   back, and moving onto a *different* bundle's discount when the new setup
+   happens to be that bundle;
+3. `scene` — placements sorted back to front, unplaceable accessories dropped
+   instead of stacked at the origin, one accessory's position not depending on
+   what else is selected, every box finite and positive, and the chair mask
+   splitting placements without losing or duplicating any;
+4. `date` — keys round-tripping through local `Date`s without the UTC off-by-one,
+   zero padding that keeps keys lexicographically sortable (which is what makes
+   the backdate check safe), Monday-first grids, and leap years.
+
+**`npm run test:smoke`** — asserts on real build output:
 
 1. the prerendered `/` HTML contains the title, hero copy, catalog names, and
    section headings;
-2. `lib/catalog.ts` and `app/page.tsx` keep their structural contracts — typed
-   products, scene helpers, `localStorage` persistence, custom form fields, and
+2. the scene is in the static HTML before hydration, the all-or-nothing
+   `-equipped` render is used when the pictured kit is complete, and there is
    **no** native `<select>` or `type="date"`;
 3. `public/scene/renders/` contains exactly the 12 expected `.webp` renders;
 4. `public/products/generated/` contains exactly the 9 expected `.webp`
    thumbnails.
+
+CI (`.github/workflows/ci.yml`) runs the same gate on every push and pull
+request.
 
 ---
 
