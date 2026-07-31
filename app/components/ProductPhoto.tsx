@@ -9,9 +9,12 @@ import type { Product } from "@/lib/catalog";
 export function ProductPhoto({
   product,
   priority = false,
+  className = "",
 }: {
   product: Product;
   priority?: boolean;
+  /** Extra utilities, e.g. the catalog card's hover zoom. */
+  className?: string;
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -20,7 +23,7 @@ export function ProductPhoto({
       alt={product.name}
       width={1200}
       height={1200}
-      className="product-photo"
+      className={`h-full w-full object-contain transition-transform duration-[260ms] ease-[ease] ${className}`}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
     />
