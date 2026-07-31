@@ -1,6 +1,25 @@
 export type Category = "desk" | "chair" | "accessory";
 export type RentalCycle = "weekly" | "monthly";
 
+/**
+ * Where an accessory sits on the desk. All values are fractions of the
+ * `.scene-room` box, so they stay correct at any render size.
+ * `depth` picks the perspective row: it drives both the contact baseline and
+ * the paint order, so items in the same row always share a baseline and
+ * nearer rows always paint over farther ones.
+ */
+export type SceneDepth = "back" | "front";
+
+export type SceneSlot = {
+  /** Horizontal centre of the visible object, ignoring transparent padding. */
+  x: number;
+  depth: SceneDepth;
+  /** Width of the visible object, ignoring transparent padding. */
+  width: number;
+  /** Per-item nudge off the row baseline, for items that hang or float. */
+  baselineOffset?: number;
+};
+
 export type Product = {
   id: string;
   category: Category;
@@ -12,6 +31,7 @@ export type Product = {
   compareAtPrice?: number;
   image: string;
   sceneOverlay?: string;
+  sceneSlot?: SceneSlot;
   badge?: "Instant" | "Popular" | "New";
   condition: "Excellent" | "Like new";
   stock: number;
@@ -176,6 +196,7 @@ export const products: Product[] = [
     compareAtPrice: 12,
     image: "/products/generated/viewpro-27.webp",
     sceneOverlay: "/products/overlays/monitor.png",
+    sceneSlot: { x: 0.523, depth: "back", width: 0.157 },
     badge: "Instant",
     condition: "Like new",
     stock: 6,
@@ -202,6 +223,7 @@ export const products: Product[] = [
     compareAtPrice: 3.25,
     image: "/products/generated/line-task-lamp.webp",
     sceneOverlay: "/products/overlays/lamp.png",
+    sceneSlot: { x: 0.635, depth: "back", width: 0.072 },
     badge: "Instant",
     condition: "Like new",
     stock: 4,
@@ -228,6 +250,11 @@ export const products: Product[] = [
     compareAtPrice: 3.75,
     image: "/products/generated/mx-keys.webp",
     sceneOverlay: "/products/overlays/keyboard.png",
+    // Read off the `-equipped` render: the keyboard sits directly in front of the
+    // monitor. It is drawn on the back layer so the chair silhouette occludes its
+    // left end instead of the overlay painting over the chair, with a baseline
+    // offset that keeps it on the front edge of the tabletop.
+    sceneSlot: { x: 0.583, depth: "back", width: 0.098, baselineOffset: 0.017 },
     badge: "Popular",
     condition: "Excellent",
     stock: 7,
@@ -254,6 +281,7 @@ export const products: Product[] = [
     compareAtPrice: 3.75,
     image: "/products/generated/mx-master-3s.webp",
     sceneOverlay: "/products/overlays/mouse.png",
+    sceneSlot: { x: 0.672, depth: "front", width: 0.022 },
     badge: "Instant",
     condition: "Excellent",
     stock: 8,
@@ -267,57 +295,6 @@ export const products: Product[] = [
       "Up to 70 days battery",
     ],
     included: ["Mouse", "USB receiver", "USB-C cable"],
-  },
-  {
-    id: "alloy-stand",
-    category: "accessory",
-    brand: "Twelve",
-    name: "Alloy Lift",
-    model: "Ergonomic Laptop Stand",
-    description:
-      "A rigid aluminum riser that brings 10–17 inch laptops to a healthier eye level.",
-    weeklyPrice: 1.5,
-    compareAtPrice: 2,
-    image: "/products/generated/alloy-stand.webp",
-    sceneOverlay: "/products/overlays/stand.png",
-    badge: "Instant",
-    condition: "Excellent",
-    stock: 9,
-    color: "Aluminum",
-    dimensions: "24 × 23 × 15 cm",
-    weight: "0.9 kg",
-    features: [
-      "Fits laptops up to 17 inches",
-      "Ventilated aluminum body",
-      "Anti-slip silicone pads",
-      "Cable pass-through",
-    ],
-    included: ["Laptop stand"],
-  },
-  {
-    id: "smart-strip",
-    category: "accessory",
-    brand: "Xiaomi",
-    name: "Smart Power Strip",
-    model: "Universal Desk Power",
-    description:
-      "Three universal sockets plus USB charging in a tidy two-meter desktop strip.",
-    weeklyPrice: 0.75,
-    image: "/products/generated/smart-strip.webp",
-    sceneOverlay: "/products/overlays/strip.png",
-    badge: "Instant",
-    condition: "Excellent",
-    stock: 12,
-    color: "Black",
-    dimensions: "23 × 4.2 × 2.6 cm",
-    weight: "420 g",
-    features: [
-      "Three universal sockets",
-      "Three USB charging ports",
-      "Two-meter power cable",
-      "Overload protection",
-    ],
-    included: ["Power strip", "EU wall adapter"],
   },
 ];
 
@@ -355,14 +332,7 @@ export const bundles: Bundle[] = [
     setup: {
       deskId: "aerolift-160",
       chairId: "ergoflex-4d",
-      accessoryIds: [
-        "viewpro-27",
-        "mi-lamp-1s",
-        "mx-keys",
-        "mx-master-3s",
-        "alloy-stand",
-        "smart-strip",
-      ],
+      accessoryIds: ["viewpro-27", "mi-lamp-1s", "mx-keys", "mx-master-3s"],
     },
   },
 ];
@@ -396,7 +366,7 @@ export function hasCompletePicturedKit(setup: WorkspaceSetup) {
   return picturedAccessoryIds.every((id) => setup.accessoryIds.includes(id));
 }
 
-export function getSceneRender(setup: WorkspaceSetup) {
+function sceneKey(setup: WorkspaceSetup) {
   const desk =
     ({
       "aerolift-120": "compact",
@@ -408,9 +378,135 @@ export function getSceneRender(setup: WorkspaceSetup) {
       "ergoflex-4d": "ergonomic",
       "focus-mesh": "focus",
     } as Record<string, string>)[setup.chairId] ?? "ergonomic";
+
+  return `${desk}-${chair}`;
+}
+
+export function getSceneRender(setup: WorkspaceSetup) {
   const equipment = hasCompletePicturedKit(setup) ? "-equipped" : "";
 
-  return `/scene/renders/${desk}-${chair}${equipment}.webp`;
+  return `/scene/renders/${sceneKey(setup)}${equipment}.webp`;
+}
+
+/**
+ * Overlays always paint above the scene photo, so the chair back would sit
+ * behind a monitor that is meant to stand further away. The photo is re-drawn
+ * on top of the overlays and masked down to the chair silhouette, which
+ * `scripts/build-chair-mattes.mjs` traces out of the bare render itself. A
+ * rectangle cannot do this job: it repaints wall over the overlay and punches a
+ * visible pale notch through it.
+ */
+const chairMatteKeys = new Set([
+  "compact-ergonomic",
+  "compact-focus",
+  "wide-ergonomic",
+  "wide-focus",
+  "oak-ergonomic",
+  "oak-focus",
+]);
+
+/** Luminance matte for the chair silhouette, or null when the setup has none. */
+export function getSceneChairMatte(setup: WorkspaceSetup) {
+  const key = sceneKey(setup);
+
+  return chairMatteKeys.has(key) ? `/scene/masks/${key}.png` : null;
+}
+
+/** Must stay in sync with the `aspect-ratio` of `.scene-room` in globals.css. */
+const ROOM_ASPECT = 3 / 2;
+
+/**
+ * Opaque bounds of each overlay PNG, measured once from its pixels. Every asset
+ * has a different amount of transparent padding, so the bottom of the file is
+ * not the point where the object touches the desk. Without these numbers a
+ * shared baseline puts each item at a different apparent height.
+ */
+const overlayBounds: Record<
+  string,
+  { w: number; h: number; minX: number; maxX: number; minY: number; maxY: number }
+> = {
+  "viewpro-27": { w: 1536, h: 1024, minX: 323, maxX: 1211, minY: 166, maxY: 873 },
+  "mi-lamp-1s": { w: 1086, h: 1448, minX: 228, maxX: 748, minY: 157, maxY: 1282 },
+  "mx-master-3s": { w: 1254, h: 1254, minX: 120, maxX: 1122, minY: 288, maxY: 946 },
+  "mx-keys": { w: 1536, h: 1024, minX: 109, maxX: 1416, minY: 369, maxY: 640 },
+};
+
+const depthLayer: Record<SceneDepth, number> = {
+  back: 2,
+  front: 4,
+};
+
+/**
+ * Contact line for each perspective row, as a fraction of room height. The
+ * camera looks slightly down at the desk, so rows further back touch the
+ * surface higher up the frame: back < mid < front. Each desk render is shot at
+ * its own height, so the rows are measured per desk.
+ */
+const deskBaselines: Record<string, Record<SceneDepth, number>> = {
+  // Read off the `-equipped` renders, where the same objects are photographed
+  // in place: the back row contacts the tabletop's rear edge, the front row sits
+  // a little ahead of it.
+  "aerolift-120": { back: 0.519, front: 0.536 }, // surface 0.515 → apron 0.540
+  "aerolift-160": { back: 0.516, front: 0.533 }, // surface 0.512 → apron 0.537
+  "form-manual-120": { back: 0.501, front: 0.521 }, // surface 0.496 → apron 0.534
+};
+
+/** Per-desk horizontal re-centring, since each desk render has its own width. */
+const deskSlotShift: Record<string, Record<string, number>> = {};
+
+export type ScenePlacement = {
+  id: string;
+  overlay: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  zIndex: number;
+};
+
+/**
+ * Turn the selected accessories into absolute placements. The box we emit is
+ * sized to the whole PNG but derived from the visible object, so the object
+ * lands at its slot centre and its row baseline whatever else is selected.
+ * Sorted back to front so paint order matches depth.
+ */
+export function resolveScenePlacements(
+  accessories: Product[],
+  deskId: string,
+): ScenePlacement[] {
+  const shifts = deskSlotShift[deskId] ?? {};
+  const baselines = deskBaselines[deskId] ?? deskBaselines["aerolift-120"];
+
+  return accessories
+    .flatMap((product) => {
+      const slot = product.sceneSlot;
+      const bounds = overlayBounds[product.id];
+      if (!slot || !bounds || !product.sceneOverlay) return [];
+
+      const contentWidth = (bounds.maxX - bounds.minX + 1) / bounds.w;
+      const contentCentreX = (bounds.minX + bounds.maxX + 1) / 2 / bounds.w;
+      const padBottom = (bounds.h - 1 - bounds.maxY) / bounds.h;
+
+      // Scale the full PNG up so its visible part matches the requested width,
+      // then take the height from the PNG's own ratio to avoid letterboxing.
+      const boxWidth = slot.width / contentWidth;
+      const boxHeight = boxWidth * ROOM_ASPECT * (bounds.h / bounds.w);
+      const baseline = baselines[slot.depth] + (slot.baselineOffset ?? 0);
+      const x = shifts[product.id] ?? slot.x;
+
+      return [
+        {
+          id: product.id,
+          overlay: product.sceneOverlay,
+          left: (x - boxWidth * contentCentreX) * 100,
+          top: (baseline - boxHeight * (1 - padBottom)) * 100,
+          width: boxWidth * 100,
+          height: boxHeight * 100,
+          zIndex: depthLayer[slot.depth],
+        },
+      ];
+    })
+    .sort((a, b) => a.zIndex - b.zIndex);
 }
 
 export function productPrice(product: Product, cycle: RentalCycle) {

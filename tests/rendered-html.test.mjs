@@ -2,33 +2,12 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+async function prerenderedHtml() {
+  return readFile(new URL("../.next/server/app/index.html", import.meta.url), "utf8");
 }
 
-test("server-renders the complete workspace builder", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
+test("prerenders the complete workspace builder", async () => {
+  const html = await prerenderedHtml();
   assert.match(html, /<title>Roomie — Build a workspace that works<\/title>/i);
   assert.match(html, /Build your room/);
   assert.match(html, /See it come alive/);
@@ -54,7 +33,7 @@ test("ships typed catalog data and local persistence", async () => {
   assert.match(catalog, /products\/generated\/line-task-lamp\.webp/);
   assert.equal(
     catalog.match(/image: "\/products\/generated\//g)?.length,
-    11,
+    9,
   );
   assert.match(catalog, /export function getSceneRender/);
   assert.match(catalog, /-equipped/);
@@ -62,16 +41,19 @@ test("ships typed catalog data and local persistence", async () => {
   assert.match(page, /window\.localStorage/);
   assert.match(page, /showModal/);
   assert.match(page, /scene-accessory-stage/);
-  assert.match(page, /product\.sceneOverlay/);
+  assert.match(page, /placement\.overlay/);
   assert.match(page, /aria-checked=\{selected\}/);
-  assert.match(page, /type="date"/);
+  assert.match(page, /<DateField/);
+  assert.match(page, /<SelectField/);
+  assert.doesNotMatch(page, /type="date"|<select/);
   assert.match(layout, /Roomie — Build a workspace that works/);
   assert.match(
     await readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     /scene-composite/,
   );
   assert.doesNotMatch(page, /scene-placement-rail|scene-cutout|product\.sceneImage/);
-  assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.doesNotMatch(packageJson, /react-loading-skeleton|wrangler|vinext|drizzle/);
+  assert.match(packageJson, /"build": "next build"/);
 });
 
 test("ships a complete set of precomposed room scenes", async () => {
@@ -107,14 +89,12 @@ test("uses generated catalog images that match the room scenes", async () => {
   const expected = [
     "aerolift-120.webp",
     "aerolift-160.webp",
-    "alloy-stand.webp",
     "ergoflex-4d.webp",
     "focus-mesh.webp",
     "form-120.webp",
     "line-task-lamp.webp",
     "mx-keys.webp",
     "mx-master-3s.webp",
-    "smart-strip.webp",
     "viewpro-27.webp",
   ];
 

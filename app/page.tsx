@@ -12,6 +12,7 @@ import {
 import {
   bundles,
   getProduct,
+  getSceneChairMatte,
   getSceneRender,
   getSetupProducts,
   hasCompletePicturedKit,
@@ -19,6 +20,7 @@ import {
   picturedAccessoryIds,
   productPrice,
   products,
+  resolveScenePlacements,
   setupPrice,
   type Bundle,
   type Category,
@@ -26,6 +28,9 @@ import {
   type RentalCycle,
   type WorkspaceSetup,
 } from "@/lib/catalog";
+import { AlertStack, DateField, SelectField, todayKey, useAlerts } from "./ui";
+
+const locations = ["Bali", "Jakarta", "Surabaya"];
 
 const formatMoney = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -111,6 +116,11 @@ function WorkspaceScene({
   const livePlacements = completePicturedKit
     ? accessories.filter((product) => !picturedAccessoryIdSet.has(product.id))
     : accessories;
+  const placements = resolveScenePlacements(livePlacements, setup.deskId);
+  const chairMatte = getSceneChairMatte(setup);
+
+  const backPlacements = placements.filter((placement) => placement.zIndex < 3);
+  const frontPlacements = placements.filter((placement) => placement.zIndex >= 3);
 
   if (!desk || !chair) return null;
 
@@ -130,19 +140,58 @@ function WorkspaceScene({
           fetchPriority="high"
         />
 
-        <div className="scene-accessory-stage" aria-label="Accessories placed in the live setup">
-          {livePlacements.map((product) =>
-            product.sceneOverlay ? (
+        {backPlacements.length > 0 ? (
+          <div className="scene-accessory-stage scene-stage-back" aria-label="Back accessories placed in the live setup">
+            {backPlacements.map((placement) => (
               <img
-                key={product.id}
-                src={product.sceneOverlay}
+                key={placement.id}
+                src={placement.overlay}
                 alt=""
-                className={`scene-accessory scene-accessory-${product.id}`}
+                className="scene-accessory"
                 loading="eager"
+                style={{
+                  height: `${placement.height}%`,
+                  left: `${placement.left}%`,
+                  top: `${placement.top}%`,
+                  width: `${placement.width}%`,
+                  zIndex: placement.zIndex,
+                }}
               />
-            ) : null,
-          )}
-        </div>
+            ))}
+          </div>
+        ) : null}
+
+        {chairMatte && backPlacements.length > 0 ? (
+          <img
+            key={`${sceneImage}-mask`}
+            src={sceneImage}
+            alt=""
+            className="scene-chair-mask"
+            loading="eager"
+            style={{ maskImage: `url(${chairMatte})`, WebkitMaskImage: `url(${chairMatte})` }}
+          />
+        ) : null}
+
+        {frontPlacements.length > 0 ? (
+          <div className="scene-accessory-stage scene-stage-front" aria-label="Front accessories placed in the live setup">
+            {frontPlacements.map((placement) => (
+              <img
+                key={placement.id}
+                src={placement.overlay}
+                alt=""
+                className="scene-accessory"
+                loading="eager"
+                style={{
+                  height: `${placement.height}%`,
+                  left: `${placement.left}%`,
+                  top: `${placement.top}%`,
+                  width: `${placement.width}%`,
+                  zIndex: placement.zIndex,
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
 
         <div className="scene-status">
           <span>
@@ -214,7 +263,8 @@ export default function Home() {
   const [setup, setSetup] = useState<WorkspaceSetup>(initialSetup);
   const [cycle, setCycle] = useState<RentalCycle>("weekly");
   const [location, setLocation] = useState("Bali");
-  const [deliveryDate, setDeliveryDate] = useState("2026-08-01");
+  const [minDeliveryDate] = useState(todayKey);
+  const [deliveryDate, setDeliveryDate] = useState(todayKey);
   const [deliveryType, setDeliveryType] = useState<"regular" | "priority">(
     "regular",
   );
@@ -223,6 +273,8 @@ export default function Home() {
   const [isRestored, setIsRestored] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [address, setAddress] = useState("");
+  const [addressError, setAddressError] = useState("");
+  const { alerts, notify, dismiss } = useAlerts();
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
   const reviewDialogRef = useRef<HTMLDialogElement>(null);
 
@@ -332,7 +384,14 @@ export default function Home() {
 
   function submitRental(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!address.trim()) {
+      setAddressError("We need an address to plan the delivery.");
+      notify("error", "Delivery address is missing", "Add where we should set the room up.");
+      return;
+    }
+    setAddressError("");
     setIsConfirmed(true);
+    notify("success", "Demo request confirmed", `We reserved your setup for ${deliveryDate}.`);
   }
 
   return (
@@ -343,23 +402,18 @@ export default function Home() {
         </a>
 
         <div className="rental-context">
-          <label>
-            <span>Location</span>
-            <select value={location} onChange={(event) => setLocation(event.target.value)}>
-              <option>Bali</option>
-              <option>Jakarta</option>
-              <option>Surabaya</option>
-            </select>
-          </label>
-          <label>
-            <span>Delivery</span>
-            <input
-              type="date"
-              value={deliveryDate}
-              min="2026-07-31"
-              onChange={(event) => setDeliveryDate(event.target.value)}
-            />
-          </label>
+          <SelectField
+            label="Location"
+            value={location}
+            options={locations}
+            onChange={setLocation}
+          />
+          <DateField
+            label="Delivery"
+            value={deliveryDate}
+            min={minDeliveryDate}
+            onChange={setDeliveryDate}
+          />
         </div>
 
         <button className="header-review" onClick={openReview}>
@@ -751,7 +805,7 @@ export default function Home() {
               <button onClick={closeReview}>Back to your workspace</button>
             </div>
           ) : (
-            <form className="review-layout" onSubmit={submitRental}>
+            <form className="review-layout" noValidate onSubmit={submitRental}>
               <div className="review-items">
                 <p className="eyebrow">Your equipment</p>
                 {selectedProducts.map((product) => (
@@ -791,31 +845,30 @@ export default function Home() {
               <div className="checkout-panel">
                 <p className="eyebrow">Delivery details</p>
                 <div className="checkout-fields">
-                  <label>
-                    <span>Location</span>
-                    <select value={location} onChange={(event) => setLocation(event.target.value)}>
-                      <option>Bali</option>
-                      <option>Jakarta</option>
-                      <option>Surabaya</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Delivery date</span>
-                    <input
-                      type="date"
-                      min="2026-07-31"
-                      value={deliveryDate}
-                      onChange={(event) => setDeliveryDate(event.target.value)}
-                    />
-                  </label>
+                  <SelectField
+                    label="Location"
+                    value={location}
+                    options={locations}
+                    onChange={setLocation}
+                  />
+                  <DateField
+                    label="Delivery date"
+                    value={deliveryDate}
+                    min={minDeliveryDate}
+                    onChange={setDeliveryDate}
+                  />
                   <label className="address-field">
                     <span>Delivery address</span>
                     <textarea
-                      required
                       value={address}
-                      onChange={(event) => setAddress(event.target.value)}
+                      aria-invalid={addressError ? true : undefined}
+                      onChange={(event) => {
+                        setAddress(event.target.value);
+                        if (addressError) setAddressError("");
+                      }}
                       placeholder="Villa, hotel, office, or coworking address"
                     />
+                    {addressError && <em className="field-error">{addressError}</em>}
                   </label>
                 </div>
 
@@ -884,6 +937,7 @@ export default function Home() {
           )}
         </div>
       </dialog>
+      <AlertStack alerts={alerts} onDismiss={dismiss} />
     </main>
   );
 }
