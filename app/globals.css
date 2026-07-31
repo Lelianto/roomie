@@ -2099,6 +2099,16 @@ footer > span {
     padding: 80px 20px 60px;
   }
 
+  .trust-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .trust-heading h2 {
+    font-size: clamp(34px, 9vw, 48px);
+  }
+
   .trust-grid {
     grid-template-columns: 1fr;
     margin-top: 50px;
