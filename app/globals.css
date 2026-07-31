@@ -8,22 +8,61 @@
   font-display: swap;
 }
 
+/**
+ * Design tokens. Declared with @theme so Tailwind generates utilities from
+ * them (bg-ink, text-accent, font-mona, max-lap:...) instead of the palette
+ * living only inside hand-written rules.
+ */
+@theme {
+  /* The stock breakpoints are dropped: this design was drawn at four specific
+     widths, and keeping Tailwind's defaults alongside them invites using a
+     breakpoint the layout was never checked at. */
+  --breakpoint-*: initial;
+  --breakpoint-wide: 1180px;
+  --breakpoint-lap: 900px;
+  --breakpoint-mob: 480px;
+  --breakpoint-tiny: 360px;
+
+  --color-ink: #1f2524;
+  --color-ink-soft: #38403e;
+  --color-paper: #f6f4ed;
+  --color-paper-deep: #e9e5db;
+  --color-white: #fffefa;
+  --color-line: rgba(31, 37, 36, 0.15);
+  --color-line-strong: rgba(31, 37, 36, 0.28);
+  --color-accent: #c54220;
+  --color-accent-soft: #f2c4b4;
+  --color-lime: #d8eaa3;
+  --color-blue: #c7dcf0;
+  --color-green: #2e704c;
+  --color-yellow: #f0d878;
+  --color-sand: #f1eee5;
+  --color-danger: #b3261e;
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mona: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
 :root {
-  --ink: #1f2524;
-  --ink-soft: #38403e;
-  --paper: #f6f4ed;
-  --paper-deep: #e9e5db;
-  --white: #fffefa;
-  --line: rgba(31, 37, 36, 0.15);
-  --line-strong: rgba(31, 37, 36, 0.28);
-  --accent: #c54220;
-  --accent-soft: #f2c4b4;
-  --lime: #d8eaa3;
-  --blue: #c7dcf0;
-  --green: #2e704c;
-  --yellow: #f0d878;
-  --mona: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --helvetica: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Aliases for the rules that have not been ported to utilities yet. Each one
+     disappears with the last authored rule that reads it. */
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-ink-soft);
+  --paper: var(--color-paper);
+  --paper-deep: var(--color-paper-deep);
+  --white: var(--color-white);
+  --line: var(--color-line);
+  --line-strong: var(--color-line-strong);
+  --accent: var(--color-accent);
+  --accent-soft: var(--color-accent-soft);
+  --lime: var(--color-lime);
+  --blue: var(--color-blue);
+  --green: var(--color-green);
+  --yellow: var(--color-yellow);
+  --mona: var(--font-mona);
+  --helvetica: var(--font-sans);
+
+  /* Not a theme token: this one is re-declared per breakpoint. */
   --header-height: 76px;
 }
 
@@ -62,18 +101,6 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid #2a6fac;
   outline-offset: 3px;
-}
-
-.sr-only {
-  border: 0;
-  clip: rect(0, 0, 0, 0);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  white-space: nowrap;
-  width: 1px;
 }
 
 .app-header {
@@ -216,7 +243,7 @@ textarea:focus-visible {
 }
 
 .select-option.active {
-  background: var(--sand, #f1eee5);
+  background: var(--color-sand);
 }
 
 .select-option.chosen {
@@ -286,7 +313,7 @@ textarea:focus-visible {
 }
 
 .date-day:hover:not(:disabled) {
-  background: var(--sand, #f1eee5);
+  background: var(--color-sand);
 }
 
 .date-day:disabled {
@@ -300,7 +327,7 @@ textarea:focus-visible {
 }
 
 .field-error {
-  color: #b3261e;
+  color: var(--color-danger);
   display: block;
   font-size: 11px;
   font-style: normal;
@@ -340,7 +367,7 @@ textarea:focus-visible {
 }
 
 .app-alert.error {
-  background: #b3261e;
+  background: var(--color-danger);
 }
 
 .app-alert.success {
