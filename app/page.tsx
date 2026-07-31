@@ -199,14 +199,27 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="configurator" id="customize" aria-labelledby="customize-title">
-        <div className="catalog-panel">
-          <div className="catalog-heading">
+      {/* The named grid areas the authored CSS used were redundant: with two
+          columns the source order already places the catalog then the preview. */}
+      <section
+        className="relative grid grid-cols-[minmax(580px,52%)_1fr] items-start border-y border-line bg-[#ded9cd] max-wide:grid-cols-[minmax(500px,54%)_1fr] max-lap:block"
+        id="customize"
+        aria-labelledby="customize-title"
+      >
+        <div className="min-w-0 border-r border-line px-[3.25vw] pt-[55px] pb-[70px] max-lap:w-full max-lap:border-r-0 max-lap:px-5 max-lap:pt-11 max-lap:pb-[65px] max-tiny:px-4">
+          <div className="flex items-end justify-between max-lap:flex-col max-lap:items-start max-lap:gap-[14px]">
             <div>
               <p className="eyebrow mb-[11px]">Customize</p>
-              <h2 id="customize-title">Shape every detail.</h2>
+              <h2
+                id="customize-title"
+                className="m-0 font-mona text-[clamp(34px,3.4vw,50px)] leading-[0.98] font-[650] tracking-[-0.055em]"
+              >
+                Shape every detail.
+              </h2>
             </div>
-            <span>Demo inventory · {location}</span>
+            <span className="mb-[3px] text-[10px] opacity-[0.52]">
+              Demo inventory · {location}
+            </span>
           </div>
 
           <div className="mobile-scene-panel">
@@ -225,7 +238,7 @@ export default function Home() {
           />
 
           <div
-            className="product-grid"
+            className="grid grid-cols-2 gap-[13px] max-wide:grid-cols-1 max-lap:-mx-5 max-lap:flex max-lap:snap-x max-lap:snap-mandatory max-lap:gap-[11px] max-lap:overflow-x-auto max-lap:px-5 max-lap:pb-[13px] max-tiny:-mx-4 max-tiny:px-4"
             role={activeStep === "accessory" ? "group" : "radiogroup"}
             aria-label={currentStep.label}
           >
@@ -244,20 +257,26 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="catalog-next">
+          <div className="mt-[18px] flex min-h-[85px] items-center justify-between bg-ink py-[15px] pr-4 pl-[22px] text-white max-lap:hidden">
             <div>
-              <span>
+              <span className="mb-[5px] block font-mona text-[9px] tracking-[0.1em] uppercase opacity-[0.48]">
                 Step {currentStepIndex + 1} of {steps.length}
               </span>
-              <p>
+              <p className="m-0 font-mona text-xs font-[650]">
                 {activeStep === "accessory"
                   ? `${setup.accessoryIds.length} add-ons selected`
                   : `${visibleProducts.find(isSelected)?.name ?? "None"} selected`}
               </p>
             </div>
-            <button type="button" onClick={goToNextStep}>
+            <button
+              type="button"
+              className="min-h-[48px] border-0 bg-lime px-[18px] font-mona text-[11px] font-[750] text-ink"
+              onClick={goToNextStep}
+            >
               {currentStepIndex === steps.length - 1 ? "Review setup" : "Continue"}
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="ml-[22px]">
+                →
+              </span>
             </button>
           </div>
         </div>
