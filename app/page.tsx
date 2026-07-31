@@ -30,8 +30,7 @@ import {
   type WorkspaceSetup,
 } from "@/lib/catalog";
 import { AlertStack, DateField, SelectField, todayKey, useAlerts } from "./ui";
-
-const locations = ["Bali", "Jakarta", "Surabaya"];
+import { LOCATIONS, STORAGE_KEY } from "@/lib/constants";
 
 const formatMoney = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -69,18 +68,17 @@ function cycleLabel(cycle: RentalCycle) {
 
 function ProductPhoto({
   product,
-  sizes = "160px",
   priority = false,
 }: {
   product: Product;
-  sizes?: string;
   priority?: boolean;
 }) {
   return (
     <img
       src={product.image}
       alt={product.name}
-      sizes={sizes}
+      width={1200}
+      height={1200}
       className="product-photo"
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
@@ -88,11 +86,11 @@ function ProductPhoto({
   );
 }
 
-function Availability({ product }: { product: Product }) {
+function Availability({ product, location }: { product: Product; location: string }) {
   return (
     <span className="availability">
       <i aria-hidden="true" />
-      {product.stock} available in Bali
+      {product.stock} available in {location}
     </span>
   );
 }
@@ -135,7 +133,8 @@ function WorkspaceScene({
           key={sceneImage}
           src={sceneImage}
           alt=""
-          sizes="(max-width: 900px) 100vw, 54vw"
+          width={1440}
+          height={960}
           className="scene-composite"
           loading="eager"
           fetchPriority="high"
@@ -282,13 +281,13 @@ export default function Home() {
 
   useEffect(() => {
     const restore = window.setTimeout(() => {
-      const saved = window.localStorage.getItem("roomie-workspace-v2");
+      const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const parsed: unknown = JSON.parse(saved);
           if (isWorkspaceSetup(parsed)) setSetup(parsed);
         } catch {
-          window.localStorage.removeItem("roomie-workspace-v2");
+          window.localStorage.removeItem(STORAGE_KEY);
         }
       }
       setIsRestored(true);
@@ -298,7 +297,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isRestored) {
-      window.localStorage.setItem("roomie-workspace-v2", JSON.stringify(setup));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
     }
   }, [isRestored, setup]);
 
@@ -414,7 +413,7 @@ export default function Home() {
           <SelectField
             label="Location"
             value={location}
-            options={locations}
+            options={LOCATIONS}
             onChange={setLocation}
           />
           <DateField
@@ -571,7 +570,7 @@ export default function Home() {
                         <span>{product.dimensions}</span>
                         <span>{product.color}</span>
                       </div>
-                      <Availability product={product} />
+                      <Availability product={product} location={location} />
                       <div className="card-price">
                         <div>
                           {product.compareAtPrice && (
@@ -715,14 +714,14 @@ export default function Home() {
             </header>
             <div className="detail-layout">
               <div className="detail-photo">
-                <ProductPhoto product={detailProduct} sizes="(max-width: 720px) 90vw, 45vw" />
+                <ProductPhoto product={detailProduct} />
                 <span>{detailProduct.condition} condition</span>
               </div>
               <div className="detail-content">
                 <p className="eyebrow">{detailProduct.brand} · {detailProduct.model}</p>
                 <h2>{detailProduct.name}</h2>
                 <p className="detail-description">{detailProduct.description}</p>
-                <Availability product={detailProduct} />
+                <Availability product={detailProduct} location={location} />
                 <div className="detail-spec-grid">
                   <div>
                     <span>Dimensions</span>
@@ -820,7 +819,7 @@ export default function Home() {
                 {selectedProducts.map((product) => (
                   <article key={product.id}>
                     <div className="review-product-photo">
-                      <ProductPhoto product={product} sizes="72px" />
+                      <ProductPhoto product={product} />
                     </div>
                     <div>
                       <span>{product.brand} · {product.category}</span>
@@ -857,7 +856,7 @@ export default function Home() {
                   <SelectField
                     label="Location"
                     value={location}
-                    options={locations}
+                    options={LOCATIONS}
                     onChange={setLocation}
                   />
                   <DateField

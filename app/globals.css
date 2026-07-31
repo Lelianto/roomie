@@ -203,6 +203,7 @@ textarea:focus-visible {
   align-items: center;
   background: transparent;
   border: 0;
+  cursor: pointer;
   display: flex;
   font-family: var(--mona);
   font-size: 12px;

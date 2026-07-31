@@ -337,9 +337,13 @@ export const bundles: Bundle[] = [
   },
 ];
 
+const defaultBundle = bundles.find((bundle) => bundle.id === "creator");
+
+if (!defaultBundle) throw new Error("Missing the default 'creator' bundle.");
+
 export const initialSetup: WorkspaceSetup = {
-  ...bundles[1].setup,
-  bundleId: bundles[1].id,
+  ...defaultBundle.setup,
+  bundleId: defaultBundle.id,
 };
 
 export function getProduct(id: string) {

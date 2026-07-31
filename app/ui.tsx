@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ALERT_TIMEOUT_MS } from "@/lib/constants";
 
 function useDismiss(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -58,6 +59,7 @@ export function SelectField({
   const ref = useDismiss(open, close);
   const listId = useId();
   const labelId = useId();
+  const optionId = (index: number) => `${listId}-${index}`;
 
   function commit(index: number) {
     const next = options[index];
@@ -100,6 +102,7 @@ export function SelectField({
         aria-expanded={open}
         aria-controls={listId}
         aria-labelledby={labelId}
+        aria-activedescendant={open ? optionId(active) : undefined}
         onClick={() => {
           setActive(Math.max(0, options.indexOf(value)));
           setOpen((current) => !current);
@@ -112,20 +115,21 @@ export function SelectField({
       {open && (
         <ul className="field-pop select-pop" id={listId} role="listbox" aria-labelledby={labelId}>
           {options.map((option, index) => (
-            <li key={option}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={option === value}
-                className={`select-option${index === active ? " active" : ""}${
-                  option === value ? " chosen" : ""
-                }`}
-                onMouseEnter={() => setActive(index)}
-                onClick={() => commit(index)}
-              >
-                {option}
-                {option === value && <i aria-hidden="true">✓</i>}
-              </button>
+            // The option role has to sit on the listbox's own child, otherwise
+            // assistive tech loses the listbox-to-option relationship.
+            <li
+              key={option}
+              id={optionId(index)}
+              role="option"
+              aria-selected={option === value}
+              className={`select-option${index === active ? " active" : ""}${
+                option === value ? " chosen" : ""
+              }`}
+              onMouseEnter={() => setActive(index)}
+              onClick={() => commit(index)}
+            >
+              {option}
+              {option === value && <i aria-hidden="true">✓</i>}
             </li>
           ))}
         </ul>
@@ -280,6 +284,15 @@ export type AppAlert = {
 export function useAlerts() {
   const [alerts, setAlerts] = useState<AppAlert[]>([]);
   const nextId = useRef(1);
+  const timers = useRef(new Set<number>());
+
+  useEffect(
+    () => () => {
+      for (const timer of timers.current) window.clearTimeout(timer);
+      timers.current.clear();
+    },
+    [],
+  );
 
   const dismiss = useCallback((id: number) => {
     setAlerts((current) => current.filter((alert) => alert.id !== id));
@@ -289,7 +302,11 @@ export function useAlerts() {
     (tone: AppAlert["tone"], title: string, body?: string) => {
       const id = nextId.current++;
       setAlerts((current) => [...current, { id, tone, title, body }]);
-      window.setTimeout(() => dismiss(id), 5200);
+      const timer = window.setTimeout(() => {
+        timers.current.delete(timer);
+        dismiss(id);
+      }, ALERT_TIMEOUT_MS);
+      timers.current.add(timer);
     },
     [dismiss],
   );
@@ -310,8 +327,11 @@ export function AlertStack({
     const node = ref.current;
     if (!node) return;
     // Rendered in the top layer so notifications stay visible above modals.
-    if (alerts.length) node.showPopover();
-    else if (node.matches(":popover-open")) node.hidePopover();
+    // Both calls throw if the popover is already in the requested state, and
+    // this effect re-runs on every change to the alert count.
+    const isOpen = node.matches(":popover-open");
+    if (alerts.length && !isOpen) node.showPopover();
+    else if (!alerts.length && isOpen) node.hidePopover();
   }, [alerts.length]);
 
   return (
