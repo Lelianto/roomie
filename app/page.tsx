@@ -18,26 +18,27 @@ import {
   hasCompletePicturedKit,
   initialSetup,
   picturedAccessoryIds,
-  productPrice,
   products,
   resolveBundleId,
   resolveScenePlacements,
-  setupPrice,
+  splitByChairMask,
   type Bundle,
   type Category,
   type Product,
   type RentalCycle,
   type WorkspaceSetup,
 } from "@/lib/catalog";
-import { AlertStack, DateField, SelectField, todayKey, useAlerts } from "./ui";
+import {
+  deliveryFeeFor,
+  productPrice,
+  setupPrice,
+  subtotalOf,
+  type DeliveryType,
+} from "@/lib/pricing";
+import { cycleLabel, formatMoney } from "@/lib/format";
+import { todayKey } from "@/lib/date";
+import { AlertStack, DateField, SelectField, useAlerts } from "./ui";
 import { LOCATIONS, STORAGE_KEY } from "@/lib/constants";
-
-const formatMoney = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
 
 const steps: { id: Category; label: string; shortLabel: string }[] = [
   { id: "desk", label: "Choose desk", shortLabel: "Desk" },
@@ -60,10 +61,6 @@ function isWorkspaceSetup(value: unknown): value is WorkspaceSetup {
     candidate.accessoryIds.every((id) => typeof id === "string" && ids.has(id)) &&
     (candidate.bundleId === null || typeof candidate.bundleId === "string")
   );
-}
-
-function cycleLabel(cycle: RentalCycle) {
-  return cycle === "weekly" ? "week" : "month";
 }
 
 function ProductPhoto({
@@ -118,8 +115,7 @@ function WorkspaceScene({
   const placements = resolveScenePlacements(livePlacements, setup.deskId);
   const chairMatte = getSceneChairMatte(setup);
 
-  const backPlacements = placements.filter((placement) => placement.zIndex < 3);
-  const frontPlacements = placements.filter((placement) => placement.zIndex >= 3);
+  const { behindChair, aheadOfChair } = splitByChairMask(placements);
 
   if (!desk || !chair) return null;
 
@@ -140,9 +136,9 @@ function WorkspaceScene({
           fetchPriority="high"
         />
 
-        {backPlacements.length > 0 ? (
+        {behindChair.length > 0 ? (
           <div className="scene-accessory-stage scene-stage-back" aria-label="Back accessories placed in the live setup">
-            {backPlacements.map((placement) => (
+            {behindChair.map((placement) => (
               <img
                 key={placement.id}
                 src={placement.overlay}
@@ -161,7 +157,7 @@ function WorkspaceScene({
           </div>
         ) : null}
 
-        {chairMatte && backPlacements.length > 0 ? (
+        {chairMatte && behindChair.length > 0 ? (
           <img
             key={`${sceneImage}-mask`}
             src={sceneImage}
@@ -172,9 +168,9 @@ function WorkspaceScene({
           />
         ) : null}
 
-        {frontPlacements.length > 0 ? (
+        {aheadOfChair.length > 0 ? (
           <div className="scene-accessory-stage scene-stage-front" aria-label="Front accessories placed in the live setup">
-            {frontPlacements.map((placement) => (
+            {aheadOfChair.map((placement) => (
               <img
                 key={placement.id}
                 src={placement.overlay}
@@ -204,7 +200,7 @@ function WorkspaceScene({
         <div className="scene-price">
           <span>Rental total</span>
           <strong>
-            {formatMoney.format(total)}
+            {formatMoney(total)}
             <small>/{cycleLabel(cycle)}</small>
           </strong>
         </div>
@@ -265,9 +261,7 @@ export default function Home() {
   const [location, setLocation] = useState("Bali");
   const [minDeliveryDate] = useState(todayKey);
   const [deliveryDate, setDeliveryDate] = useState(todayKey);
-  const [deliveryType, setDeliveryType] = useState<"regular" | "priority">(
-    "regular",
-  );
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("regular");
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [isRestored, setIsRestored] = useState(false);
@@ -306,13 +300,10 @@ export default function Home() {
   );
   const selectedProducts = useMemo(() => getSetupProducts(setup), [setup]);
   const activeBundle = bundles.find((bundle) => bundle.id === setup.bundleId);
-  const subtotal = selectedProducts.reduce(
-    (sum, product) => sum + productPrice(product, cycle),
-    0,
-  );
+  const subtotal = subtotalOf(selectedProducts, cycle);
   const total = setupPrice(setup, cycle);
   const discount = subtotal - total;
-  const deliveryFee = deliveryType === "priority" ? 5 : 0;
+  const deliveryFee = deliveryFeeFor(deliveryType);
   const orderTotal = total + deliveryFee;
   const currentStepIndex = steps.findIndex((step) => step.id === activeStep);
 
@@ -575,7 +566,7 @@ export default function Home() {
                         <div>
                           {product.compareAtPrice && (
                             <del>
-                              {formatMoney.format(
+                              {formatMoney(
                                 cycle === "weekly"
                                   ? product.compareAtPrice
                                   : product.compareAtPrice * 4,
@@ -583,7 +574,7 @@ export default function Home() {
                             </del>
                           )}
                           <strong>
-                            {formatMoney.format(productPrice(product, cycle))}
+                            {formatMoney(productPrice(product, cycle))}
                           </strong>
                           <small>/{cycleLabel(cycle)}</small>
                         </div>
@@ -635,7 +626,7 @@ export default function Home() {
               </div>
               <div className="preview-actions">
                 {discount > 0 && (
-                  <span>You save {formatMoney.format(discount)}</span>
+                  <span>You save {formatMoney(discount)}</span>
                 )}
                 <button onClick={openReview}>Review & rent</button>
               </div>
@@ -684,7 +675,7 @@ export default function Home() {
       <div className="mobile-rent-bar">
         <div>
           <span>{selectedProducts.length} pieces · {cycleLabel(cycle)}ly</span>
-          <strong>{formatMoney.format(total)}</strong>
+          <strong>{formatMoney(total)}</strong>
         </div>
         <button onClick={openReview}>Review setup</button>
       </div>
@@ -760,7 +751,7 @@ export default function Home() {
                 </div>
                 <div className="detail-cta">
                   <div>
-                    <strong>{formatMoney.format(productPrice(detailProduct, cycle))}</strong>
+                    <strong>{formatMoney(productPrice(detailProduct, cycle))}</strong>
                     <span>/{cycleLabel(cycle)}</span>
                   </div>
                   <button
@@ -826,7 +817,7 @@ export default function Home() {
                       <strong>{product.name}</strong>
                       <small>{product.condition} · {product.color}</small>
                     </div>
-                    <b>{formatMoney.format(productPrice(product, cycle))}</b>
+                    <b>{formatMoney(productPrice(product, cycle))}</b>
                     {product.category === "accessory" && (
                       <button
                         type="button"
@@ -913,24 +904,24 @@ export default function Home() {
                 <div className="order-summary">
                   <div>
                     <span>Equipment subtotal</span>
-                    <b>{formatMoney.format(subtotal)}</b>
+                    <b>{formatMoney(subtotal)}</b>
                   </div>
                   {discount > 0 && (
                     <div className="saving-line">
                       <span>{activeBundle?.name} saving</span>
-                      <b>-{formatMoney.format(discount)}</b>
+                      <b>-{formatMoney(discount)}</b>
                     </div>
                   )}
                   <div>
                     <span>Delivery & assembly</span>
-                    <b>{deliveryFee ? formatMoney.format(deliveryFee) : "Included"}</b>
+                    <b>{deliveryFee ? formatMoney(deliveryFee) : "Included"}</b>
                   </div>
                   <div className="total-line">
                     <span>
                       Due today
-                      <small>Then {formatMoney.format(total)}/{cycleLabel(cycle)}</small>
+                      <small>Then {formatMoney(total)}/{cycleLabel(cycle)}</small>
                     </span>
-                    <b>{formatMoney.format(orderTotal)}</b>
+                    <b>{formatMoney(orderTotal)}</b>
                   </div>
                 </div>
 

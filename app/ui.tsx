@@ -8,6 +8,15 @@ import {
   useState,
 } from "react";
 import { ALERT_TIMEOUT_MS } from "@/lib/constants";
+import {
+  dayFormat,
+  fromKey,
+  monthCells,
+  monthFormat,
+  startOfMonth,
+  toKey,
+  weekdays,
+} from "@/lib/date";
 
 function useDismiss(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -138,34 +147,6 @@ export function SelectField({
   );
 }
 
-const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-const monthFormat = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  year: "numeric",
-});
-
-const triggerFormat = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-});
-
-function toKey(date: Date) {
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function fromKey(key: string) {
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, (month ?? 1) - 1, day ?? 1);
-}
-
-export function todayKey() {
-  return toKey(new Date());
-}
-
 export function DateField({
   label,
   value,
@@ -183,26 +164,15 @@ export function DateField({
   const labelId = useId();
   const selected = fromKey(value);
   const minDate = min ? fromKey(min) : null;
-  const [cursor, setCursor] = useState(
-    () => new Date(selected.getFullYear(), selected.getMonth(), 1),
-  );
+  const [cursor, setCursor] = useState(() => startOfMonth(selected));
 
   function toggle() {
-    if (!open) setCursor(new Date(selected.getFullYear(), selected.getMonth(), 1));
+    if (!open) setCursor(startOfMonth(selected));
     setOpen((current) => !current);
   }
 
-  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-  const lead = (first.getDay() + 6) % 7;
-  const canGoBack = !minDate || first > new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
-  const cells: (Date | null)[] = [
-    ...Array.from({ length: lead }, () => null),
-    ...Array.from(
-      { length: daysInMonth },
-      (_, index) => new Date(cursor.getFullYear(), cursor.getMonth(), index + 1),
-    ),
-  ];
+  const canGoBack = !minDate || cursor > startOfMonth(minDate);
+  const cells = monthCells(cursor);
 
   function shiftMonth(step: number) {
     if (step < 0 && !canGoBack) return;
@@ -222,7 +192,7 @@ export function DateField({
         aria-labelledby={labelId}
         onClick={toggle}
       >
-        <span className="field-value">{triggerFormat.format(selected)}</span>
+        <span className="field-value">{dayFormat.format(selected)}</span>
         <Caret />
       </button>
       {open && (

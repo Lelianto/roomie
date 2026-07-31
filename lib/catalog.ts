@@ -526,15 +526,18 @@ export function resolveScenePlacements(
     .sort((a, b) => a.zIndex - b.zIndex);
 }
 
-export function productPrice(product: Product, cycle: RentalCycle) {
-  return cycle === "weekly" ? product.weeklyPrice : product.weeklyPrice * 4 * 0.75;
-}
-
-export function setupPrice(setup: WorkspaceSetup, cycle: RentalCycle) {
-  const subtotal = getSetupProducts(setup).reduce(
-    (sum, product) => sum + productPrice(product, cycle),
-    0,
-  );
-  const bundle = bundles.find((item) => item.id === setup.bundleId);
-  return bundle ? subtotal * (1 - bundle.discount) : subtotal;
+/**
+ * Split placements around the chair silhouette. The chair matte is painted on
+ * top of everything below `depthLayer.front`, so callers must not hard-code
+ * that threshold: keeping it here means the layer numbers have a single owner.
+ */
+export function splitByChairMask(placements: ScenePlacement[]) {
+  return {
+    behindChair: placements.filter(
+      (placement) => placement.zIndex < depthLayer.front,
+    ),
+    aheadOfChair: placements.filter(
+      (placement) => placement.zIndex >= depthLayer.front,
+    ),
+  };
 }
