@@ -222,7 +222,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="mobile-scene-panel">
+          <div className="hidden max-lap:sticky max-lap:top-[var(--header-height)] max-lap:z-20 max-lap:-mx-5 max-lap:mt-[26px] max-lap:block max-lap:w-[calc(100%+40px)] max-tiny:-mx-4 max-tiny:w-[calc(100%+32px)]">
             <WorkspaceScene
               setup={setup}
               cycle={cycle}
@@ -281,25 +281,37 @@ export default function Home() {
           </div>
         </div>
 
-        <aside className="preview-panel">
-          <div className="preview-sticky">
+        <aside className="min-w-0 p-[3.25vw] max-lap:hidden">
+          <div className="sticky top-[calc(var(--header-height)+24px)]">
             <WorkspaceScene
               setup={setup}
               cycle={cycle}
               total={total}
               sceneId="desktop-scene-title"
             />
-            <div className="preview-meta">
+            <div className="flex min-h-[97px] items-center justify-between bg-ink py-[17px] pr-[19px] pl-[23px] text-white">
               <div>
-                <span>Selected setup</span>
-                <strong>{activeBundle ? activeBundle.name : "Custom workspace"}</strong>
-                <p>
+                <span className="mb-1 block font-mona text-[8px] tracking-[0.12em] uppercase opacity-[0.46]">
+                  Selected setup
+                </span>
+                <strong className="block font-mona text-[15px]">
+                  {activeBundle ? activeBundle.name : "Custom workspace"}
+                </strong>
+                <p className="mt-1 mb-0 text-[10px] opacity-[0.56]">
                   {selectedProducts.length} pieces · delivery from {deliveryDate}
                 </p>
               </div>
-              <div className="preview-actions">
-                {discount > 0 && <span>You save {formatMoney(discount)}</span>}
-                <button type="button" onClick={openReview}>
+              <div className="flex flex-col items-end gap-2">
+                {discount > 0 && (
+                  <span className="font-mona text-[9px] font-bold text-lime">
+                    You save {formatMoney(discount)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="min-h-[43px] border-0 bg-lime px-4 font-mona text-[10px] font-[750] text-ink"
+                  onClick={openReview}
+                >
                   Review &amp; rent
                 </button>
               </div>
@@ -312,14 +324,18 @@ export default function Home() {
 
       <SiteFooter />
 
-      <div className="mobile-rent-bar">
+      <div className="hidden max-lap:fixed max-lap:bottom-0 max-lap:z-40 max-lap:flex max-lap:min-h-[calc(76px+env(safe-area-inset-bottom))] max-lap:w-full max-lap:items-center max-lap:justify-between max-lap:bg-[rgba(31,37,36,0.96)] max-lap:pt-2.5 max-lap:pr-[13px] max-lap:pb-[calc(10px+env(safe-area-inset-bottom))] max-lap:pl-[18px] max-lap:text-white">
         <div>
-          <span>
+          <span className="mb-[3px] block text-[9px] opacity-[0.52]">
             {selectedProducts.length} pieces · {cycleLabel(cycle)}ly
           </span>
-          <strong>{formatMoney(total)}</strong>
+          <strong className="block font-mona text-[22px]">{formatMoney(total)}</strong>
         </div>
-        <button type="button" onClick={openReview}>
+        <button
+          type="button"
+          className="min-h-[48px] border-0 bg-lime px-[18px] font-mona text-[11px] font-[750] text-ink"
+          onClick={openReview}
+        >
           Review setup
         </button>
       </div>

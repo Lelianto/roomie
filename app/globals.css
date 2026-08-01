@@ -72,25 +72,9 @@
 }
 
 :root {
-  /* Aliases for the rules that have not been ported to utilities yet. Each one
-     disappears with the last authored rule that reads it. */
-  --ink: var(--color-ink);
-  --ink-soft: var(--color-ink-soft);
-  --paper: var(--color-paper);
-  --paper-deep: var(--color-paper-deep);
-  --white: var(--color-shell);
-  --line: var(--color-line);
-  --line-strong: var(--color-line-strong);
-  --accent: var(--color-accent);
-  --accent-soft: var(--color-accent-soft);
-  --lime: var(--color-lime);
-  --blue: var(--color-blue);
-  --green: var(--color-green);
-  --yellow: var(--color-yellow);
-  --mona: var(--font-mona);
-  --helvetica: var(--font-sans);
-
-  /* Not a theme token: this one is re-declared per breakpoint. */
+  /* Not a theme token: read by the sticky offsets below, and re-declared per
+     breakpoint. The colour aliases that used to sit here are gone -- the last
+     authored rule that read them has been ported. */
   --header-height: 76px;
 }
 
@@ -109,9 +93,9 @@
   }
 
   body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--helvetica);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
     margin: 0;
   }
 
@@ -138,24 +122,21 @@
   }
 }
 
-.preview-panel {
-  min-width: 0;
-  padding: 3.25vw;
-}
-
-.mobile-scene-panel {
-  display: none;
-}
-
-.preview-sticky {
-  position: sticky;
-  top: calc(var(--header-height) + 24px);
-}
-
-.real-scene {
-  margin: 0;
-}
-
+/**
+ * Everything below stays authored CSS on purpose. The rest of the design is
+ * expressed as utilities; these are the parts where a utility would be a
+ * translation with no reader left better off.
+ *
+ * The scene is a stack of four layers whose order encodes depth: the room photo,
+ * accessories standing behind the chair, the same photo redrawn and masked down
+ * to the chair silhouette, then accessories in front. The z-indexes are a
+ * sequence that has to be read together, and `mask-mode: luminance` has no
+ * utility at all. Split across arbitrary values in markup this stops being
+ * legible as a single stacking decision.
+ *
+ * The keyframes, the scrollbar reset, and the reduced-motion block are likewise
+ * either impossible or pointless to express as utilities.
+ */
 .scene-room {
   aspect-ratio: 3 / 2;
   background:
@@ -246,104 +227,8 @@
   }
 }
 
-.scene-status {
-  left: 22px;
-  position: absolute;
-  top: 20px;
-  z-index: 15;
-}
-
-.scene-status > span {
-  align-items: center;
-  display: flex;
-  font-family: var(--mona);
-  font-size: 9px;
-  font-weight: 700;
-  gap: 7px;
-  letter-spacing: 0.09em;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-}
-
-.scene-status i {
-  background: #4f9b66;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(79, 155, 102, 0.16);
-  height: 6px;
-  width: 6px;
-}
-
-.scene-status strong {
-  font-family: var(--mona);
-  font-size: 12px;
-}
-
-.scene-price {
-  background: rgba(255, 254, 250, 0.86);
-  bottom: 18px;
-  backdrop-filter: blur(12px);
-  padding: 12px 15px;
-  position: absolute;
-  right: 18px;
-  z-index: 15;
-}
-
-.scene-price > span {
-  display: block;
-  font-family: var(--mona);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.scene-price > strong {
-  font-family: var(--mona);
-  font-size: 25px;
-  letter-spacing: -0.04em;
-}
-
-.scene-price small {
-  font-size: 9px;
-  font-weight: 500;
-  opacity: 0.55;
-}
-
-.scene-selection-strip {
-  align-items: center;
-  background: #252a28;
-  color: white;
-  display: flex;
-  gap: 12px;
-  min-height: 66px;
-  overflow: hidden;
-  padding: 12px 16px;
-}
-
-.scene-selection-strip > span {
-  color: var(--lime);
-  flex: 0 0 auto;
-  font-family: var(--mona);
-  font-size: 8px;
-  font-weight: 760;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.scene-selection-strip > strong {
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
-  flex: 0 0 auto;
-  font-family: var(--mona);
-  font-size: 10px;
-  padding-left: 12px;
-}
-
+/* Bespoke: hiding a scrollbar has no utility equivalent in either engine. */
 .scene-accessory-list {
-  display: flex;
-  flex: 1;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
   scrollbar-width: none;
 }
 
@@ -351,90 +236,12 @@
   display: none;
 }
 
-.scene-accessory-list small {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  display: flex;
-  flex: 0 0 auto;
-  font-family: var(--mona);
-  font-size: 9px;
-  gap: 5px;
-  min-height: 28px;
-  padding: 0 9px;
-  white-space: nowrap;
-}
-
-.scene-accessory-list i {
-  color: var(--lime);
-  font-style: normal;
-}
-
-.preview-meta {
-  align-items: center;
-  background: var(--ink);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  min-height: 97px;
-  padding: 17px 19px 17px 23px;
-}
-
-.preview-meta > div:first-child > span {
-  display: block;
-  font-family: var(--mona);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  margin-bottom: 4px;
-  opacity: 0.46;
-  text-transform: uppercase;
-}
-
-.preview-meta strong {
-  display: block;
-  font-family: var(--mona);
-  font-size: 15px;
-}
-
-.preview-meta p {
-  font-size: 10px;
-  margin: 4px 0 0;
-  opacity: 0.56;
-}
-
-.preview-actions {
-  align-items: flex-end;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.preview-actions > span {
-  color: var(--lime);
-  font-family: var(--mona);
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.preview-actions button {
-  background: var(--lime);
-  border: 0;
-  color: var(--ink);
-  font-family: var(--mona);
-  font-size: 10px;
-  font-weight: 750;
-  min-height: 43px;
-  padding: 0 16px;
-}
-
-.mobile-rent-bar {
-  display: none;
-}
-
-@media (max-width: 1180px) {
-}
-
+/**
+ * Not a theme token and not a utility: the header height is read by the sticky
+ * offsets of the mobile scene panel and the step nav, so it has to be a custom
+ * property that changes with the breakpoint. The body padding reserves room for
+ * the fixed rent bar.
+ */
 @media (max-width: 900px) {
   :root {
     --header-height: 68px;
@@ -443,108 +250,6 @@
   body {
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
-
-  .preview-panel {
-    display: none;
-  }
-
-  .mobile-scene-panel {
-    display: block;
-    margin: 26px -20px 0;
-    position: sticky;
-    top: var(--header-height);
-    width: calc(100% + 40px);
-    z-index: 20;
-  }
-
-  .preview-meta {
-    display: none;
-  }
-
-  .scene-status {
-    left: 15px;
-    top: 14px;
-  }
-
-  .scene-price {
-    bottom: 12px;
-    right: 12px;
-  }
-
-  .scene-selection-strip {
-    min-height: 68px;
-    padding: 9px 13px;
-  }
-
-  .scene-selection-strip > strong {
-    display: none;
-  }
-
-  .scene-selection-strip > span {
-    max-width: 52px;
-  }
-
-  .mobile-rent-bar {
-    align-items: center;
-    background: rgba(31, 37, 36, 0.96);
-    bottom: 0;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    min-height: calc(76px + env(safe-area-inset-bottom));
-    padding: 10px 13px calc(10px + env(safe-area-inset-bottom)) 18px;
-    position: fixed;
-    width: 100%;
-    z-index: 40;
-  }
-
-  .mobile-rent-bar span,
-  .mobile-rent-bar strong {
-    display: block;
-  }
-
-  .mobile-rent-bar span {
-    font-size: 9px;
-    margin-bottom: 3px;
-    opacity: 0.52;
-  }
-
-  .mobile-rent-bar strong {
-    font-family: var(--mona);
-    font-size: 22px;
-  }
-
-  .mobile-rent-bar button {
-    background: var(--lime);
-    border: 0;
-    color: var(--ink);
-    font-family: var(--mona);
-    font-size: 11px;
-    font-weight: 750;
-    min-height: 48px;
-    padding: 0 18px;
-  }
-
-}
-
-@media (max-width: 480px) {
-  .scene-price {
-    padding: 9px 11px;
-  }
-
-  .scene-price > strong {
-    font-size: 20px;
-  }
-
-}
-
-@media (max-width: 360px) {
-  .mobile-scene-panel {
-    margin-left: -16px;
-    margin-right: -16px;
-    width: calc(100% + 32px);
-  }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
