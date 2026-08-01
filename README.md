@@ -273,16 +273,39 @@ share, and no inventory to reserve in a demo; the setup is a client concern.
 The guard matters because a stale payload from an earlier catalog version would
 otherwise render a broken scene, so an invalid payload is discarded instead.
 
-### 9. Plain CSS for the scene, utilities for the rest
+### 9. Utilities for the components, authored CSS for the scene
 
-**Decision:** the scene, layout and components live in a single authored
-stylesheet (`app/globals.css`); Tailwind is wired through PostCSS for utility
-work.
+**Decision:** components are styled with Tailwind utilities; `app/globals.css`
+holds the theme tokens, the element defaults, and the handful of rules that a
+utility cannot express. It is 262 lines, down from 2342.
 
-**Rejected:** expressing the scene in utility classes. The preview needs
-`mask-mode`, computed percentage geometry, a strict aspect-ratio box and layered
-stacking contexts — all of which are clearer as named, documented rules than as
-long class strings.
+**Rejected:** expressing the scene in utility classes. The preview is a
+four-layer stack whose z-indexes encode depth — room photo, accessories behind
+the chair, the photo redrawn and masked to the chair silhouette, accessories in
+front — and it needs `mask-mode: luminance`, which has no utility. Spread across
+arbitrary values in markup it stops reading as one stacking decision. The
+keyframes, the scrollbar reset, and the reduced-motion block stay for the same
+reason.
+
+**Rejected:** keeping the authored stylesheet for components too. The rules had
+drifted into styling across component boundaries — `.rental-context .field*` and
+`.checkout-fields .field*` reached into the select and date fields from two
+different parents. Those are now a `variant` prop on the field, which makes the
+two presentations explicit instead of implied by ancestry.
+
+Three things about this migration are worth recording, because a passing build
+hid all of them:
+
+- **Element defaults must be layered.** The reset was unlayered, and unlayered
+  CSS beats anything in `@layer utilities`, so `font: inherit` on `button` won
+  over `text-xs font-bold` on every control. It now sits in `@layer base`.
+- **Do not shadow a Tailwind colour.** The palette used both `#fffefa` for card
+  surfaces and pure white for text on ink. Registering the first as
+  `--color-white` silently redefined `text-white`, so it is named
+  `--color-shell` after its role.
+- **Two utilities for one property resolve by stylesheet order,** not by the
+  order they appear in the class list. Conditional states therefore select a
+  whole class set (`active` or `idle`) rather than layering one over the other.
 
 ### 10. Next.js App Router on Vercel, not Cloudflare Workers
 
@@ -489,7 +512,7 @@ runtime binding to configure.
 | --- | --- |
 | Framework | Next.js 16 (App Router, Turbopack) |
 | UI | React 19 |
-| Styling | Authored CSS + Tailwind CSS 4 via PostCSS |
+| Styling | Tailwind CSS 4 via PostCSS, with 262 lines of authored CSS |
 | Language | TypeScript 5.9 (`strict`) |
 | Tests | `node --test`: unit tests over `lib/`, plus build-output assertions |
 | Runtime | Node.js >= 22.18 |
@@ -501,11 +524,17 @@ runtime binding to configure.
 ```
 app/
   layout.tsx      Root layout, metadata (OG/Twitter, favicon, metadataBase)
-  page.tsx        Configurator: steps, scene, details dialog, review, checkout
-  ui.tsx          Custom form primitives (select, date picker, alerts)
-  globals.css     Design system, scene layers, component styles
+  page.tsx        State and composition only
+  globals.css     Theme tokens, element defaults, and the scene layers
+  hooks/          usePersistentSetup: restore and persist the saved setup
+  components/     One file per piece of the page
+    ui/           Form primitives (select, date picker, alerts, sheet dialog)
 lib/
-  catalog.ts      Products, bundles, pricing, and the scene placement model
+  catalog.ts      Products, bundles, and the scene placement model
+  pricing.ts      Cycle rates, bundle discounts, delivery fees, order totals
+  format.ts       Money and cycle labels
+  date.ts         YYYY-MM-DD keys and calendar grids
+  constants.ts    Storage key, locations, alert timeout
 public/
   scene/renders/  12 pre-baked room photographs
   scene/masks/    6 greyscale chair-occlusion mattes
