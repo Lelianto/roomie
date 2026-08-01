@@ -10,7 +10,21 @@ import {
   toKey,
   weekdays,
 } from "@/lib/date";
-import { Caret, useDismiss } from "./field";
+import {
+  Caret,
+  fieldLabel,
+  fieldPop,
+  fieldTrigger,
+  fieldValue,
+  fieldWrap,
+  useDismiss,
+  type FieldVariant,
+} from "./field";
+
+const navButton =
+  "h-6 w-6 border border-line bg-transparent text-sm leading-none disabled:cursor-default disabled:opacity-30";
+const dayBase =
+  "aspect-square border-0 font-mona text-[11px] font-semibold disabled:cursor-default disabled:opacity-[0.28] enabled:hover:bg-sand";
 
 /**
  * Calendar popover replacing <input type="date">, whose look and language are
@@ -23,11 +37,13 @@ export function DateField({
   value,
   min,
   onChange,
+  variant = "boxed",
 }: {
   label: string;
   value: string;
   min?: string;
   onChange: (value: string) => void;
+  variant?: FieldVariant;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -53,43 +69,60 @@ export function DateField({
   }
 
   return (
-    <div className="field" ref={ref}>
-      <span className="field-label" id={labelId}>
+    <div className={fieldWrap[variant]} ref={ref}>
+      <span className={fieldLabel} id={labelId}>
         {label}
       </span>
       <button
         type="button"
-        className="field-trigger"
+        className={fieldTrigger[variant]}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-labelledby={labelId}
         onClick={toggle}
       >
-        <span className="field-value">{dayFormat.format(selected)}</span>
+        <span className={fieldValue}>{dayFormat.format(selected)}</span>
         <Caret />
       </button>
       {open && (
-        <div className="field-pop date-pop" role="dialog" aria-labelledby={labelId}>
-          <div className="date-head">
+        <div
+          className={`${fieldPop} w-[258px] p-3`}
+          role="dialog"
+          aria-labelledby={labelId}
+        >
+          <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
+              className={navButton}
               onClick={() => shiftMonth(-1)}
               disabled={!canGoBack}
               aria-label="Previous month"
             >
               ‹
             </button>
-            <strong>{monthFormat.format(cursor)}</strong>
-            <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month">
+            <strong className="font-mona text-xs tracking-[0.02em]">
+              {monthFormat.format(cursor)}
+            </strong>
+            <button
+              type="button"
+              className={navButton}
+              onClick={() => shiftMonth(1)}
+              aria-label="Next month"
+            >
               ›
             </button>
           </div>
-          <div className="date-weekdays" aria-hidden="true">
+          <div className="grid grid-cols-7 gap-0.5" aria-hidden="true">
             {weekdays.map((day) => (
-              <span key={day}>{day}</span>
+              <span
+                key={day}
+                className="py-1 text-center font-mona text-[9px] font-bold opacity-45"
+              >
+                {day}
+              </span>
             ))}
           </div>
-          <div className="date-grid">
+          <div className="grid grid-cols-7 gap-0.5">
             {cells.map((date, index) => {
               if (!date) return <span key={`lead-${index}`} />;
               const key = toKey(date);
@@ -99,7 +132,7 @@ export function DateField({
                   key={key}
                   disabled={Boolean(minDate && date < minDate)}
                   aria-pressed={key === value}
-                  className={key === value ? "date-day chosen" : "date-day"}
+                  className={`${dayBase} ${key === value ? "bg-ink text-shell" : "bg-transparent"}`}
                   onClick={() => {
                     onChange(key);
                     setOpen(false);

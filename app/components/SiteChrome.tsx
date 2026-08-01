@@ -44,19 +44,23 @@ export function SiteHeader({
     <header className="sticky top-0 z-30 grid h-[var(--header-height)] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-[rgba(246,244,237,0.92)] px-[3.25vw] backdrop-blur-[18px] max-lap:grid-cols-[1fr_auto] max-lap:px-[18px]">
       <Brand label="Roomie home" />
 
-      {/* Hidden below the lap breakpoint, where the mobile rent bar takes over. */}
-      <div className="rental-context flex min-w-[410px] items-stretch rounded-full border border-line-strong max-lap:hidden">
+      {/* Hidden below the lap breakpoint, where the mobile rent bar takes over.
+          The divider and the 44/56 split are the container's business, not the
+          field's, so they live here rather than inside the field component. */}
+      <div className="flex min-w-[410px] items-stretch rounded-full border border-line-strong max-lap:hidden [&>*+*]:border-l [&>*+*]:border-line [&>*:first-child]:w-[44%] [&>*:last-child]:w-[56%]">
         <SelectField
           label="Location"
           value={location}
           options={LOCATIONS}
           onChange={onLocationChange}
+          variant="pill"
         />
         <DateField
           label="Delivery"
           value={deliveryDate}
           min={minDeliveryDate}
           onChange={onDeliveryDateChange}
+          variant="pill"
         />
       </div>
 

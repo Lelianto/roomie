@@ -43,6 +43,20 @@ export function useAlerts() {
   return { alerts, notify, dismiss };
 }
 
+// A `manual` popover is display:none until opened, so the closed state has to be
+// spelled out rather than relying on the popover default the authored rule set.
+const stack =
+  "pointer-events-none fixed top-auto right-auto bottom-5 left-1/2 z-[90] grid w-[min(360px,calc(100vw-32px))] -translate-x-1/2 gap-2 overflow-visible border-0 bg-transparent p-0 [&:not(:popover-open)]:hidden";
+
+const alertBase =
+  "pointer-events-auto flex items-start justify-between gap-3 px-[14px] py-3 text-shell";
+
+const tones = {
+  info: "bg-ink",
+  error: "bg-danger",
+  success: "bg-[#1f5c3d]",
+} as const;
+
 export function AlertStack({
   alerts,
   onDismiss,
@@ -65,19 +79,30 @@ export function AlertStack({
 
   return (
     <div
-      className="alert-stack"
+      className={stack}
       ref={ref}
       popover="manual"
       role="region"
       aria-label="Notifications"
     >
       {alerts.map((alert) => (
-        <div key={alert.id} className={`app-alert ${alert.tone}`} role="alert">
+        <div
+          key={alert.id}
+          className={`${alertBase} ${tones[alert.tone]}`}
+          role="alert"
+        >
           <div>
-            <strong>{alert.title}</strong>
-            {alert.body && <p>{alert.body}</p>}
+            <strong className="block font-mona text-xs">{alert.title}</strong>
+            {alert.body && (
+              <p className="mt-[3px] mb-0 text-[11px] opacity-[0.82]">{alert.body}</p>
+            )}
           </div>
-          <button type="button" onClick={() => onDismiss(alert.id)} aria-label="Dismiss">
+          <button
+            type="button"
+            className="border-0 bg-transparent p-0 text-base leading-none text-inherit"
+            onClick={() => onDismiss(alert.id)}
+            aria-label="Dismiss"
+          >
             ×
           </button>
         </div>

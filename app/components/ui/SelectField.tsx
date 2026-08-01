@@ -1,7 +1,19 @@
 "use client";
 
 import { useCallback, useId, useState, type KeyboardEvent } from "react";
-import { Caret, useDismiss } from "./field";
+import {
+  Caret,
+  fieldLabel,
+  fieldPop,
+  fieldTrigger,
+  fieldValue,
+  fieldWrap,
+  useDismiss,
+  type FieldVariant,
+} from "./field";
+
+const optionBase =
+  "flex w-full cursor-pointer items-center justify-between gap-2.5 border-0 bg-transparent px-2.5 py-2 text-left font-mona text-xs";
 
 /**
  * A combobox built on a button plus a listbox, rather than a native <select>.
@@ -13,11 +25,13 @@ export function SelectField({
   value,
   options,
   onChange,
+  variant = "boxed",
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
+  variant?: FieldVariant;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(() => Math.max(0, options.indexOf(value)));
@@ -61,13 +75,13 @@ export function SelectField({
   }
 
   return (
-    <div className="field" ref={ref}>
-      <span className="field-label" id={labelId}>
+    <div className={fieldWrap[variant]} ref={ref}>
+      <span className={fieldLabel} id={labelId}>
         {label}
       </span>
       <button
         type="button"
-        className="field-trigger"
+        className={fieldTrigger[variant]}
         role="combobox"
         aria-expanded={open}
         aria-controls={listId}
@@ -79,12 +93,12 @@ export function SelectField({
         }}
         onKeyDown={onKeyDown}
       >
-        <span className="field-value">{value}</span>
+        <span className={fieldValue}>{value}</span>
         <Caret />
       </button>
       {open && (
         <ul
-          className="field-pop select-pop"
+          className={`${fieldPop} list-none p-1.5`}
           id={listId}
           role="listbox"
           aria-labelledby={labelId}
@@ -97,14 +111,18 @@ export function SelectField({
               id={optionId(index)}
               role="option"
               aria-selected={option === value}
-              className={`select-option${index === active ? " active" : ""}${
-                option === value ? " chosen" : ""
+              className={`${optionBase} ${index === active ? "bg-sand" : ""} ${
+                option === value ? "font-[750]" : "font-semibold"
               }`}
               onMouseEnter={() => setActive(index)}
               onClick={() => commit(index)}
             >
               {option}
-              {option === value && <i aria-hidden="true">✓</i>}
+              {option === value && (
+                <i aria-hidden="true" className="not-italic opacity-60">
+                  ✓
+                </i>
+              )}
             </li>
           ))}
         </ul>
